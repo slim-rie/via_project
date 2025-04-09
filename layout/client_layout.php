@@ -147,6 +147,32 @@
                 display: none;
             }
         }
+        /* Fixed header table styles */
+        .fixed-header {
+            position: relative;
+            width: 100%;
+            overflow: auto;
+            height: 100%; /* Set the height as needed */
+        }
+
+        .fixed-header table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .fixed-header th {
+            position: sticky;
+            top: 0;
+            background-color: #f8f9fa; /* Same as body background */
+            z-index: 10;
+        }
+
+        th,
+        td {
+            padding: 10px;
+            border: 1px solid #ccc;
+            text-align: left;
+        }
     </style>
 </head>
 
@@ -154,14 +180,14 @@
     <!-- Top Navbar -->
     <nav class="navbar navbar-expand-lg navbar-dark">
         <div class="container-fluid">
-            <a class="navbar-brand" href="#">JOREDANE TRUCKING SERVICES</a>
+            <a class="navbar-brand" href="#">JOREDANE TRUCKING SERVICES | SCHEDULING </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarTop">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarTop">
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item"><a class="nav-link text-white" href="#"><i class="bi bi-bell"></i> Notifications</a></li>
-                    <li class="nav-item"><a class="nav-link text-white" href="#"><i class="bi bi-person-circle"></i> Profile</a></li>
+                    
                     <li class="nav-item"><a class="nav-link text-white" href="../logout.php"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
                 </ul>
             </div>
@@ -175,11 +201,9 @@
             <span>Menu</span>
         </div>
         <ul class="nav flex-column">
-            <li class="nav-item"><a href="dashboard.php" class="nav-link <?= $activePage === 'dashboard' ? 'active' : '' ?>"><i class="bi bi-speedometer2"></i> <span>Dashboard</span></a></li>
-            <li class="nav-item"><a href="schedules.php" class="nav-link <?= $activePage === 'schedules' ? 'active' : '' ?>"><i class="bi bi-box-seam"></i> <span>Schedules</span></a></li>
-            <li class="nav-item"><a href="reports.php" class="nav-link <?= $activePage === 'reports' ? 'active' : '' ?>"><i class="bi bi-receipt"></i> <span>Reports</span></a></li>
-            <li class="nav-item"><a href="clients.php" class="nav-link <?= $activePage === 'clients' ? 'active' : '' ?>"><i class="bi bi-people"></i> <span>Clients</span></a></li>
-            <li class="nav-item"><a href="employees.php" class="nav-link <?= $activePage === 'employees' ? 'active' : '' ?>"><i class="bi bi-person-badge"></i> <span>Employees</span></a></li>
+            <li class="nav-item"><a href="home.php" class="nav-link <?= $activePage === 'home' ? 'active' : '' ?>"><i class="bi bi-speedometer2"></i> <span>Home</span></a></li>
+            <li class="nav-item"><a href="available.php" class="nav-link <?= $activePage === 'available' ? 'active' : '' ?>"><i class="bi bi-speedometer2"></i> <span>Available Dates</span></a></li>
+            <li class="nav-item"><a href="booking.php" class="nav-link <?= $activePage === 'book' ? 'active' : '' ?>"><i class="bi bi-speedometer2"></i> <span>Start Booking</span></a></li>
         </ul>
     </div>
 

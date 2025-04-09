@@ -9,5 +9,5 @@ ob_start();
 
 <?php
 $content = ob_get_clean();
-include "../layout/layout.php";
+include "../layout/admin_layout.php";
 ?>
