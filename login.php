@@ -1,27 +1,48 @@
 <?php
 session_start();
-include 'dbcon.php'; // Ensure this file contains the database connection code
+include 'dbcon.php'; // database connection
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $username = trim($_POST["username"]);
     $password = $_POST["password"];
 
-    // Prepare and execute the SQL statement
-    $stmt = $con->prepare("SELECT id, password FROM users WHERE username = ?");
+    // Updated query to include join with Roles table
+    $stmt = $con->prepare("
+        SELECT u.user_id, u.password, r.role_name 
+        FROM Users u
+        JOIN Roles r ON u.role_id = r.role_id
+        WHERE u.username = ?
+    ");
     $stmt->bind_param("s", $username);
     $stmt->execute();
     $stmt->store_result();
 
     if ($stmt->num_rows > 0) {
-        $stmt->bind_result($id, $hashed_password);
+        $stmt->bind_result($userID, $hashed_password, $role);
         $stmt->fetch();
 
-        // Verify the password
         if (password_verify($password, $hashed_password)) {
-            $_SESSION["user_id"] = $id; // Store user ID in session
+            $_SESSION["user_id"] = $userID;
+            $_SESSION["role"] = strtolower($role);
+
+            // Redirect based on role
+            switch ($_SESSION["role"]) {
+                case 'admin':
+                    $redirect = 'admin/dashboard.php';
+                    break;
+                case 'employee':
+                    $redirect = 'driver/driver_ui.php'; // or porter_ui.php if needed
+                    break;
+                case 'customer':
+                    $redirect = 'client/booking.php';
+                    break;
+                default:
+                    $redirect = 'login.php';
+            }
+
             echo "<script>
                     alert('Log-in success!');
-                    window.location.href = 'admin/dashboard.php'; // Redirect to home page
+                    window.location.href = '$redirect';
                   </script>";
             exit();
         } else {
@@ -41,6 +62,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $con->close();
 }
 ?>
+
+
 
 <!DOCTYPE html>
 <html lang="en">
@@ -83,7 +106,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 </div>
 
                 <div class="d-flex justify-content-end">
-                    
                     <button type="submit" class="btn btn-outline-primary rounded-pill mx-2 input-shadow">Log-in</button>
                 </div>
             </form>
