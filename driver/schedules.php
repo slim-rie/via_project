@@ -1,50 +1,52 @@
 <?php
-$title = "All Schedules";
+$title = "Schedules Today";
 $activePage = "schedules";
 session_start();
 ob_start();
 include "../dbcon.php";
 
-// Check if the user is logged in and is an admin
-if (!isset($_SESSION['user_id']) || strtolower($_SESSION['role']) !== "admin") {
+// Check if logged in and role is driver
+if (!isset($_SESSION['user_id']) || strtolower($_SESSION['role']) !== "driver") {
     header("Location: ../login.php");
     exit();
 }
 
+$user_id = $_SESSION['user_id'];
+
+// Fetch driver_id from users table and store in session
+if (!isset($_SESSION['driver_id'])) {
+    $driverQuery = $con->prepare("SELECT driver_id FROM drivers WHERE user_id = ?");
+    $driverQuery->bind_param("i", $user_id);
+    $driverQuery->execute();
+    $driverResult = $driverQuery->get_result();
+
+    if ($row = $driverResult->fetch_assoc()) {
+        $_SESSION['driver_id'] = $row['driver_id'];
+    }
+}
+
+// Now you can use $_SESSION['driver_id'] anywhere in your script
+
 $statusFilter = $_GET['filter'] ?? 'All';
 
-// Updated SQL query to join users, schedules, and deliveries
 $sql = "
-    SELECT 
-    s.schedule_id,
-    s.start_time,
-    s.end_time,
-    s.pick_up,
-    s.destination,
-    c.full_name AS customer_name,
-    MAX(d.delivery_status) AS delivery_status
-FROM schedules s
-JOIN customers c 
-  ON s.customer_id = c.customer_id
-LEFT JOIN deliveries d 
-  ON s.schedule_id = d.schedule_id
-GROUP BY 
-    s.schedule_id, 
-    s.start_time, 
-    s.end_time, 
-    s.pick_up, 
-    s.destination, 
-    c.full_name;
-
+   SELECT s.schedule_id, s.start_time, s.end_time, s.pick_up, s.destination, 
+           u.username, 
+           (SELECT delivery_status FROM deliveries 
+            WHERE schedule_id = s.schedule_id 
+            ORDER BY delivery_datetime DESC LIMIT 1) as delivery_status
+    FROM schedules s 
+    JOIN users u ON s.customer_id = u.user_id 
+    WHERE s.driver_id = ?
 ";
 
-
 if ($statusFilter !== "All") {
-    $sql .= " WHERE d.delivery_status = ?";
+    $sql .= " AND d.delivery_status = ?";
     $stmt = $con->prepare($sql);
-    $stmt->bind_param("s", $statusFilter);
+    $stmt->bind_param("is", $_SESSION['driver_id'], $statusFilter);
 } else {
     $stmt = $con->prepare($sql);
+    $stmt->bind_param("i", $_SESSION['driver_id']);
 }
 
 $stmt->execute();
@@ -57,11 +59,10 @@ $schedulesResult = $stmt->get_result();
     <label>Filter by Status:
         <select name="filter" onchange="this.form.submit()">
             <option value="All" <?= $statusFilter == 'All' ? 'selected' : '' ?>>All</option>
-            <option value="Pending" <?= $statusFilter == 'Pending' ? 'selected' : '' ?>>Pending</option>
-            <option value="Accepted" <?= $statusFilter == 'Accepted' ? 'selected' : '' ?>>Accepted</option>
+            <option value="Scheduled" <?= $statusFilter == 'Scheduled' ? 'selected' : '' ?>>Scheduled</option>
             <option value="In Transit" <?= $statusFilter == 'In Transit' ? 'selected' : '' ?>>In Transit</option>
             <option value="Delivered" <?= $statusFilter == 'Delivered' ? 'selected' : '' ?>>Delivered</option>
-            <option value="Completed" <?= $statusFilter == 'Completed' ? 'selected' : '' ?>>Completed</option>
+            <option value="Returned" <?= $statusFilter == 'Returned' ? 'selected' : '' ?>>Returned</option>
         </select>
     </label>
 </form>
@@ -70,7 +71,7 @@ $schedulesResult = $stmt->get_result();
     <table border="1" cellpadding="5">
         <tr>
             <th>Schedule ID</th>
-            <th>Customer Name</th>
+            <th>Customer Username</th>
             <th>Pick-Up</th>
             <th>Destination</th>
             <th>Start Time</th>
@@ -81,32 +82,23 @@ $schedulesResult = $stmt->get_result();
         <?php while ($row = $schedulesResult->fetch_assoc()): ?>
             <tr>
                 <td><?= $row['schedule_id'] ?></td>
-                <td><?= htmlspecialchars($row['customer_name']) ?></td>
+                <td><?= htmlspecialchars($row['username']) ?></td>
                 <td><?= htmlspecialchars($row['pick_up']) ?></td>
                 <td><?= htmlspecialchars($row['destination']) ?></td>
                 <td><?= htmlspecialchars($row['start_time']) ?></td>
                 <td><?= htmlspecialchars($row['end_time']) ?></td>
-                <td><?= htmlspecialchars($row['delivery_status'] ?? 'Pending') ?></td>
+                <td><?= htmlspecialchars($row['delivery_status'] ?? 'Scheduled') ?></td>
                 <td>
                     <?php
-                    $status = $row['delivery_status'] ?? 'Pending';
-                    if (in_array($status, ['Pending', 'Accepted', 'In Transit', 'Delivered'])):
+                    $status = $row['delivery_status'] ?? 'Scheduled';
+                    if (in_array($status, ['In Transit', 'Delivered'])):
                     ?>
                         <form method="POST" action="schedules/update_delivery_status.php" style="display:inline;">
                             <input type="hidden" name="schedule_id" value="<?= $row['schedule_id'] ?>">
                             <?php
-                            if ($status === 'Pending') {
-                                echo '<input type="hidden" name="new_status" value="Accepted">';
-                                echo '<button type="submit">Accept</button>';
-                            } elseif ($status === 'Accepted') {
-                                echo '<input type="hidden" name="new_status" value="In Transit">';
-                                echo '<button type="submit">Start Delivery</button>';
-                            } elseif ($status === 'In Transit') {
+                            if ($status === 'In Transit') {
                                 echo '<input type="hidden" name="new_status" value="Delivered">';
                                 echo '<button type="submit">Mark as Delivered</button>';
-                            } elseif ($status === 'Delivered') {
-                                echo '<input type="hidden" name="new_status" value="Completed">';
-                                echo '<button type="submit" onclick="return confirm(\'Confirm truck is back to company?\')">Mark as Completed</button>';
                             }
                             ?>
                         </form>
@@ -120,8 +112,6 @@ $schedulesResult = $stmt->get_result();
 </div>
 
 <?php
-$stmt->close();
-$con->close();
 $content = ob_get_clean();
-include "../layout/admin_layout.php";
+include "../layout/driver_layout.php";
 ?>

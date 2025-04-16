@@ -2,84 +2,61 @@
 session_start();
 include 'dbcon.php';
 
-// Redirect if not logged in or not an admin
-if (!isset($_SESSION["user_id"]) || strtolower($_SESSION["role"]) !== "admin") {
-    echo "<script>
-            alert('Access denied. Only admins can register users.');
-            window.location.href = 'login.php';
-          </script>";
-    exit();
-}
-
-$username = $password = $email = $role = $name = "";
+// Initialize variables
+$username = $password = $email = $role = $full_name = "";
 $success = $error = "";
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $username = trim($_POST["username"]);
     $password = $_POST["password"];
     $email = trim($_POST["email"]);
-    $role = $_POST["role"];
-    $name = trim($_POST["name"]); // Get the name from the form
+    $role = strtolower($_POST["role"]);
+    $full_name = trim($_POST["full_name"]); // Get the name from the form
 
-    // Map role names to their IDs
-    $role_map = [
-        'Admin' => 1,
-        'Driver' => 2,
-        'Porter' => 2,
-        'Client' => 3,
-    ];
-
-    if (!array_key_exists($role, $role_map)) {
-        $error = "Invalid role selected.";
+    // Check for strong password (minimum 8 characters, at least 1 letter, 1 number)
+    if (!preg_match("/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/", $password)) {
+        $error = "Password must be at least 8 characters long, containing at least one letter and one number.";
     } else {
         // Check for duplicate username
-        $stmt = $con->prepare("SELECT user_id FROM users WHERE username = ?");
-        $stmt->bind_param("s", $username);
-        $stmt->execute();
-        $stmt->store_result();
+        $stmt_check = $con->prepare("SELECT user_id FROM users WHERE username = ?");
+        $stmt_check->bind_param("s", $username);
+        $stmt_check->execute();
+        $stmt_check->store_result();
 
-        if ($stmt->num_rows > 0) {
+        if ($stmt_check->num_rows > 0) {
             $error = "Username already taken.";
         } else {
+            // Hash password
             $hashed_password = password_hash($password, PASSWORD_DEFAULT);
 
-            // Insert into users table (without email)
-            $insert_user = $con->prepare("INSERT INTO users (username, password, role_id) VALUES (?, ?, ?)");
-            $insert_user->bind_param("ssi", $username, $hashed_password, $role_map[$role]);
+            // Insert into users table
+            $insert_user = $con->prepare("INSERT INTO users (username, password, role) VALUES (?, ?, ?)");
+            $insert_user->bind_param("sss", $username, $hashed_password, $role);
 
             if ($insert_user->execute()) {
                 // Retrieve the new user_id
                 $user_id = $insert_user->insert_id;
 
-                // Insert into related table based on role
-                if ($role === 'Client') {
-                    $insert_customer = $con->prepare("INSERT INTO customers (name, email) VALUES (?, ?)");
-                    $insert_customer->bind_param("ss", $name, $email);
+                // Insert into the respective table based on role
+                if ($role === 'admin') {
+                    $insert_customer = $con->prepare("INSERT INTO admins (user_id, full_name, email) VALUES (?, ?, ?)");
+                    $insert_customer->bind_param("iss", $user_id, $full_name, $email);
                     $insert_customer->execute();
                     $insert_customer->close();
-
-                    // Update the users table with customer_id
-                    $update_user = $con->prepare("UPDATE users SET customer_id = ? WHERE user_id = ?");
-                    $customer_id = $con->insert_id; // Retrieve customer_id from last insert
-                    $update_user->bind_param("ii", $customer_id, $user_id);
-                    $update_user->execute();
-                    $update_user->close();
-                } elseif (in_array($role, ['Driver', 'Porter'])) {
-                    $insert_employee = $con->prepare("INSERT INTO employees (name, email) VALUES (?, ?)");
-                    $insert_employee->bind_param("ss", $name, $email);
+                } elseif($role === 'customer') {
+                    $insert_customer = $con->prepare("INSERT INTO customers (user_id, full_name, email) VALUES (?, ?, ?)");
+                    $insert_customer->bind_param("iss", $user_id, $full_name, $email);
+                    $insert_customer->execute();
+                    $insert_customer->close();
+                } elseif ($role === 'driver' || $role === 'porter') {
+                    $insert_employee = $con->prepare("INSERT INTO drivers (user_id, full_name, email) VALUES (?, ?, ?)");
+                    $insert_employee->bind_param("iss", $user_id, $full_name, $email);
                     $insert_employee->execute();
                     $insert_employee->close();
-
-                    // Update the users table with employee_id
-                    $update_user = $con->prepare("UPDATE users SET employee_id = ? WHERE user_id = ?");
-                    $employee_id = $con->insert_id; // Retrieve employee_id from last insert
-                    $update_user->bind_param("ii", $employee_id, $user_id);
-                    $update_user->execute();
-                    $update_user->close();
                 }
 
                 $success = "User registered successfully!";
-                $username = $password = $email = $role = $name = ""; // Clear fields
+                $username = $password = $email = $role = $full_name = ""; // Clear fields
             } else {
                 $error = "Something went wrong. Please try again.";
             }
@@ -87,12 +64,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $insert_user->close();
         }
 
-        $stmt->close();
+        $stmt_check->close();
     }
 
     $con->close();
 }
 ?>
+
 
 <!DOCTYPE html>
 <html lang="en">
@@ -130,15 +108,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     <label for="password" class="form-label">Password:</label>
                     <input type="password" name="password" id="password" class="form-control rounded-pill" required>
                 </div>
-
+                
                 <div class="mb-3">
                     <label for="email" class="form-label">Email:</label>
                     <input type="email" name="email" id="email" class="form-control rounded-pill" required value="<?php echo htmlspecialchars($email); ?>">
                 </div>
 
                 <div class="mb-3">
-                    <label for="name" class="form-label">Name:</label>
-                    <input type="text" name="name" id="name" class="form-control rounded-pill" required value="<?php echo htmlspecialchars($name); ?>">
+                    <label for="full_name" class="form-label">Full Name:</label>
+                    <input type="full_name" name="full_name" id="full_name" class="form-control rounded-pill" required value="<?php echo htmlspecialchars($full_name); ?>">
                 </div>
 
                 <div class="mb-3">
@@ -148,7 +126,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         <option value="Admin" <?= ($role == "Admin") ? 'selected' : '' ?>>Admin</option>
                         <option value="Driver" <?= ($role == "Driver") ? 'selected' : '' ?>>Driver</option>
                         <option value="Porter" <?= ($role == "Porter") ? 'selected' : '' ?>>Porter</option>
-                        <option value="Client" <?= ($role == "Client") ? 'selected' : '' ?>>Customer</option>
+                        <option value="Customer" <?= ($role == "Customer") ? 'selected' : '' ?>>Customer</option>
                     </select>
                 </div>
 

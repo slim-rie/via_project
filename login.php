@@ -6,13 +6,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $username = trim($_POST["username"]);
     $password = $_POST["password"];
 
-    // Updated query to include join with Roles table
-    $stmt = $con->prepare("
-        SELECT u.user_id, u.password, r.role_name 
-        FROM Users u
-        JOIN Roles r ON u.role_id = r.role_id
-        WHERE u.username = ?
-    ");
+    // Query the user including their role
+    $stmt = $con->prepare("SELECT user_id, password, role FROM users WHERE username = ?");
     $stmt->bind_param("s", $username);
     $stmt->execute();
     $stmt->store_result();
@@ -22,22 +17,28 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $stmt->fetch();
 
         if (password_verify($password, $hashed_password)) {
+            session_regenerate_id(true); // Prevent session fixation
             $_SESSION["user_id"] = $userID;
-            $_SESSION["role"] = strtolower($role);
+            $_SESSION["role"] = $role;
 
             // Redirect based on role
-            switch ($_SESSION["role"]) {
+            switch ($role) {
                 case 'admin':
                     $redirect = 'admin/dashboard.php';
                     break;
-                case 'employee':
-                    $redirect = 'driver/driver_ui.php'; // or porter_ui.php if needed
+                case 'driver':
+                    $redirect = 'driver/schedules.php';
                     break;
                 case 'customer':
                     $redirect = 'client/booking.php';
                     break;
                 default:
-                    $redirect = 'login.php';
+                    // Optional: handle unexpected role
+                    echo "<script>
+                            alert('Unknown role. Contact admin.');
+                            window.history.back();
+                          </script>";
+                    exit();
             }
 
             echo "<script>
@@ -107,6 +108,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
                 <div class="d-flex justify-content-end">
                     <button type="submit" class="btn btn-outline-primary rounded-pill mx-2 input-shadow">Log-in</button>
+                    <a href="register.php">register</a>
                 </div>
             </form>
         </div>

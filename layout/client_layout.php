@@ -147,12 +147,14 @@
                 display: none;
             }
         }
+
         /* Fixed header table styles */
         .fixed-header {
             position: relative;
             width: 100%;
             overflow: auto;
-            height: 100%; /* Set the height as needed */
+            height: 100%;
+            /* Set the height as needed */
         }
 
         .fixed-header table {
@@ -163,7 +165,8 @@
         .fixed-header th {
             position: sticky;
             top: 0;
-            background-color: #f8f9fa; /* Same as body background */
+            background-color: #f8f9fa;
+            /* Same as body background */
             z-index: 10;
         }
 
@@ -172,6 +175,245 @@
             padding: 10px;
             border: 1px solid #ccc;
             text-align: left;
+        }
+
+        .booking-form {
+            max-width: 600px;
+            margin: 20px auto;
+            background: #f8f8f8;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .booking-form label {
+            display: block;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        .booking-form input[type="text"],
+        .booking-form input[type="datetime-local"],
+        .booking-form select {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+
+        .booking-form button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            border: none;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .booking-form button:hover {
+            background-color: #0056b3;
+        }
+
+        #bookingModal {
+            display: none;
+            /* Hidden by default */
+            position: fixed;
+            z-index: 999;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.5);
+
+            justify-content: center;
+            align-items: center;
+        }
+
+        #bookingModal.show {
+            display: flex;
+            /* Show and center content when active */
+        }
+
+        .modal-content {
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            width: 400px;
+            max-width: 90%;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+
+
+
+        #bookingModal form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        #bookingModal label {
+            display: flex;
+            flex-direction: column;
+            font-weight: bold;
+        }
+
+        #bookingModal input,
+        #bookingModal select {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        #bookingModal button {
+            padding: 10px;
+            background-color: #28a745;
+            border: none;
+            border-radius: 5px;
+            color: white;
+            cursor: pointer;
+        }
+
+        #bookingModal button#closeBookingModal {
+            background-color: #dc3545;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .time-display {
+            display: flex;
+            gap: 20px;
+        }
+
+        .time-display>div {
+            flex: 1;
+        }
+
+        .time-value {
+            padding: 8px;
+            background: #f5f5f5;
+            border-radius: 4px;
+            margin-top: 5px;
+        }
+
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        /* Aesthetic Delivery Info Styling */
+        .info-section {
+            height: calc(100vh - 56px);
+            padding-left: 250px;
+            background: linear-gradient(-45deg, #e3f2fd, #e0f7fa, #fff3e0, #f3e5f5);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        @keyframes gradientBG {
+            0% {
+                background-position: 0% 50%;
+            }
+
+            50% {
+                background-position: 100% 50%;
+            }
+
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        .info-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-radius: 25px;
+            padding: 40px;
+            max-width: 720px;
+            width: 100%;
+            box-shadow: 0 20px 30px rgba(0, 0, 0, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.4);
+            text-align: center;
+            animation: fadeIn 1.2s ease-in-out;
+            transition: all 0.3s ease;
+        }
+
+        .info-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 25px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .info-card h1 {
+            color: #364C84;
+            margin-bottom: 20px;
+            font-size: 2.2rem;
+        }
+
+        .tagline {
+            font-size: 1.1rem;
+            margin-bottom: 30px;
+            color: #5c5c5c;
+            font-style: italic;
+        }
+
+        .info-item {
+            font-size: 1.4rem;
+            margin-bottom: 20px;
+            color: #222;
+        }
+
+        .info-item i {
+            color: #364C84;
+            margin-right: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .info-section {
+                padding-left: 70px;
+            }
+
+            .info-card {
+                margin: 0 20px;
+            }
         }
     </style>
 </head>
@@ -187,7 +429,7 @@
             <div class="collapse navbar-collapse" id="navbarTop">
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item"><a class="nav-link text-white" href="#"><i class="bi bi-bell"></i> Notifications</a></li>
-                    
+
                     <li class="nav-item"><a class="nav-link text-white" href="../logout.php"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
                 </ul>
             </div>

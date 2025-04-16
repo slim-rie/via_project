@@ -4,24 +4,27 @@ session_start();
 
 // Check if user is logged in and is an admin
 if (!isset($_SESSION['user_id']) || strtolower($_SESSION['role']) !== "admin") {
-    header("Location: ../login.php");
+    header("Location: ../../login.php");
     exit();
 }
 
 $schedule_id = $_POST['schedule_id'];
 
-// Update delivery status to 'Accepted'
-$updateDelivery = $con->prepare("UPDATE deliveries SET delivery_status = 'Accepted' WHERE schedule_id = ?");
-$updateDelivery->bind_param("i", $schedule_id);
+// Insert if not exists, otherwise update
+$insertOrUpdate = $con->prepare("
+    INSERT INTO deliveries (schedule_id, delivery_status)
+    VALUES (?, 'Accepted')
+    ON DUPLICATE KEY UPDATE delivery_status = 'Accepted'
+");
+$insertOrUpdate->bind_param("i", $schedule_id);
 
-if ($updateDelivery->execute()) {
-    // Redirect to the admin pending bookings page
+if ($insertOrUpdate->execute()) {
     header("Location: ../pending_bookings.php?success=1");
     exit();
 } else {
-    echo "Error accepting booking: " . $updateDelivery->error;
+    echo "Error accepting booking: " . $insertOrUpdate->error;
 }
 
-$updateDelivery->close();
+$insertOrUpdate->close();
 $con->close();
 ?>
