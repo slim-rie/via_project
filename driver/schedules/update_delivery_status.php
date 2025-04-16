@@ -2,8 +2,8 @@
 include "../../dbcon.php";
 session_start();
 
-// Check if user is logged in and is an admin
-if (!isset($_SESSION['user_id']) || strtolower($_SESSION['role']) !== "admin") {
+// Allow only employees to access
+if (!isset($_SESSION['user_id']) || strtolower($_SESSION['role']) !== "employee") {
     header("Location: ../../login.php");
     exit();
 }
@@ -11,12 +11,12 @@ if (!isset($_SESSION['user_id']) || strtolower($_SESSION['role']) !== "admin") {
 $schedule_id = $_POST['schedule_id'];
 $new_status = $_POST['new_status'];
 
-// Update delivery status in deliveries table
+// Update delivery status
 $update = $con->prepare("UPDATE deliveries SET delivery_status = ?, delivery_datetime = NOW() WHERE schedule_id = ?");
 $update->bind_param("si", $new_status, $schedule_id);
 
 if ($update->execute()) {
-    // If status is 'Completed', set truck back to 'available'
+    // If status is Completed, return truck to available
     if ($new_status === "Completed") {
         $truckUpdate = $con->prepare("
             UPDATE trucks 
@@ -38,4 +38,3 @@ if ($update->execute()) {
 
 $update->close();
 $con->close();
-?>

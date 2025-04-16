@@ -1,39 +1,68 @@
 <?php
-include "../../dbcon.php";
 session_start();
+include '../../dbcon.php'; // Fix path from '../../dbcon.php'
 
-$userId = $_SESSION['user_id'] ?? 4; // fallback
-
-$pick_up = $_POST['pick_up'];
-$destination = $_POST['destination'];
-$start_time = $_POST['start_time'];
-$end_time = $_POST['end_time'];
-$truck_id = $_POST['truck_id'];
-
-// Insert schedule
-$stmt = $con->prepare("INSERT INTO schedules (start_time, end_time, destination, pick_up, truck_id, user_id)
-VALUES (?, ?, ?, ?, ?, ?)");
-$stmt->bind_param("ssssii", $start_time, $end_time, $destination, $pick_up, $truck_id, $userId);
-
-if ($stmt->execute()) {
-    $schedule_id = $stmt->insert_id;
-
-    // Set truck to unavailable
-    $con->query("UPDATE trucks SET status='unavailable' WHERE truck_id=$truck_id");
-
-    // Insert delivery row with Pending status
-    $delivery = $con->prepare("INSERT INTO deliveries (delivery_status, delivery_datetime, schedule_id)
-                               VALUES ('Pending', NOW(), ?)");
-    $delivery->bind_param("i", $schedule_id);
-    $delivery->execute();
-    $delivery->close();
-
-    header("Location: ../booking.php?success=1");
-} else {
-    echo "Error: " . $stmt->error;
+if (!isset($_SESSION['user_id'])) {
+    header("Location: ../login.php");
+    exit();
 }
 
+// Get customer_id
+$customerQuery = $con->prepare("SELECT customer_id FROM customers WHERE user_id = ?");
+$customerQuery->bind_param("i", $_SESSION['user_id']);
+$customerQuery->execute();
+$customerResult = $customerQuery->get_result()->fetch_assoc();
+$customer_id = $customerResult['customer_id'] ?? null;
 
-$stmt->close();
+if (!$customer_id) {
+    header("Location: ../booking.php?error=no_customer");
+    exit();
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $truck_id = $_POST['truck_id'];
+    $booking_date = $_POST['booking_date'];
+    
+    // Get truck's driver_id
+    $truckQuery = $con->prepare("SELECT driver_id FROM trucks WHERE truck_id = ?");
+    $truckQuery->bind_param("i", $truck_id);
+    $truckQuery->execute();
+    $truckResult = $truckQuery->get_result()->fetch_assoc();
+    $driver_id = $truckResult['driver_id'] ?? null;
+
+    if (!$driver_id) {
+        header("Location: ../booking.php?error=no_driver");
+        exit();
+    }
+
+    // Fixed times (06:00-18:00)
+    $start_time = $booking_date . ' 06:00:00';
+    $end_time = $booking_date . ' 18:00:00';
+
+    // Insert into schedules
+    $insert = $con->prepare("
+        INSERT INTO schedules 
+        (customer_id, truck_id, driver_id, start_time, end_time, destination, pick_up)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    ");
+    $insert->bind_param(
+        "iiissss", 
+        $customer_id, 
+        $truck_id, 
+        $driver_id,
+        $start_time,
+        $end_time,
+        $_POST['destination'],
+        $_POST['pick_up']
+    );
+
+    if ($insert->execute()) {
+        header("Location: ../booking.php?success=1");
+    } else {
+        header("Location: ../booking.php?error=db_error");
+    }
+    
+    $insert->close();
+}
 $con->close();
 ?>

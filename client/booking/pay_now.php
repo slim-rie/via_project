@@ -1,10 +1,9 @@
 <?php
 include "../../dbcon.php";
 
-// Get the schedule ID from the POST request
 $schedule_id = $_POST['schedule_id'];
 
-// Fetch the start_time and end_time for the selected schedule
+// Get schedule dates
 $scheduleQuery = $con->prepare("SELECT start_time, end_time FROM schedules WHERE schedule_id = ?");
 $scheduleQuery->bind_param("i", $schedule_id);
 $scheduleQuery->execute();
@@ -15,26 +14,24 @@ if (!$scheduleResult) {
     exit();
 }
 
-// Calculate the number of days between start_time and end_time
+// Calculate days between start and end
 $start_time = new DateTime($scheduleResult['start_time']);
 $end_time = new DateTime($scheduleResult['end_time']);
 $interval = $start_time->diff($end_time);
 $number_of_days = $interval->days;
 
-// Calculate total amount based on ₱3000 per day
-$amount_per_day = 3000; // Amount charged per day
+// Avoid 0-day charges
+if ($number_of_days == 0) $number_of_days = 1;
+
+$amount_per_day = 5000;
 $total_amount = $number_of_days * $amount_per_day;
 
-// Insert payment record
+// Insert into payments
 $stmt = $con->prepare("INSERT INTO payments (total_amount, status, date, schedule_id) VALUES (?, 'Paid', NOW(), ?)");
 $stmt->bind_param("di", $total_amount, $schedule_id);
 
 if ($stmt->execute()) {
-    // Optional: Update delivery status if needed
-    $updateDelivery = $con->prepare("UPDATE deliveries SET delivery_status = 'Pending' WHERE schedule_id = ?");
-    $updateDelivery->bind_param("i", $schedule_id);
-    $updateDelivery->execute();
-    
+    // No need to update delivery status again as it's already 'Pending'
     header("Location: ../booking.php?paid=1");
     exit();
 } else {

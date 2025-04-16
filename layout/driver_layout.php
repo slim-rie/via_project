@@ -147,14 +147,12 @@
                 display: none;
             }
         }
-
         /* Fixed header table styles */
         .fixed-header {
             position: relative;
             width: 100%;
             overflow: auto;
-            height: 100%;
-            /* Set the height as needed */
+            height: 100%; /* Set the height as needed */
         }
 
         .fixed-header table {
@@ -165,8 +163,7 @@
         .fixed-header th {
             position: sticky;
             top: 0;
-            background-color: #f8f9fa;
-            /* Same as body background */
+            background-color: #f8f9fa; /* Same as body background */
             z-index: 10;
         }
 
@@ -176,41 +173,24 @@
             border: 1px solid #ccc;
             text-align: left;
         }
-
+        
         #calendar {
-            max-width: 900px;
-            margin: 20px auto;
-            padding: 10px;
-            background-color: #fff;
-            border-radius: 10px;
-            box-shadow: 0px 0px 10px #ccc;
+            max-width: 1100px;
+            margin: 30px auto;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
-        .card {
-            border: none;
-            border-radius: 10px;
+        h1 {
+            text-align: center;
+            margin-top: 20px;
+            color: #333;
         }
-        .card-header {
-            background-color: #364C84;
-            color: white;
-            border-radius: 10px 10px 0 0 !important;
-        }
-        .form-control {
-            height: 45px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            transition: all 0.3s;
-        }
-        .form-control:focus {
-            border-color: #364C84;
-            box-shadow: 0 0 0 0.2rem rgba(54, 76, 132, 0.25);
-        }
-        .btn-primary {
-            background-color: #364C84;
-            border-color: #364C84;
-        }
-        .btn-primary:hover {
-            background-color: #2F3E6E;
-            border-color: #2F3E6E;
+        .fc-event {
+            cursor: pointer;
+            font-size: 0.85em;
+            padding: 2px 5px;
         }
     </style>
 </head>
@@ -240,15 +220,9 @@
             <span>Menu</span>
         </div>
         <ul class="nav flex-column">
-            <li class="nav-item"><a href="dashboard.php" class="nav-link <?= $activePage === 'dashboard' ? 'active' : '' ?>"><i class="bi bi-speedometer2"></i> <span>Dashboard</span></a></li>
+            <li class="nav-item"><a href="driver_ui.php" class="nav-link <?= $activePage === 'calendar' ? 'active' : '' ?>"><i class="bi bi-speedometer2"></i> <span>Calendar</span></a></li>
             <li class="nav-item"><a href="schedules.php" class="nav-link <?= $activePage === 'schedules' ? 'active' : '' ?>"><i class="bi bi-box-seam"></i> <span>Schedules</span></a></li>
-            <li class="nav-item"><a href="reports.php" class="nav-link <?= $activePage === 'reports' ? 'active' : '' ?>"><i class="bi bi-receipt"></i> <span>Reports</span></a></li>
-            <li class="nav-item"><a href="clients.php" class="nav-link <?= $activePage === 'clients' ? 'active' : '' ?>"><i class="bi bi-people"></i> <span>Clients</span></a></li>
-            <li class="nav-item"><a href="employees.php" class="nav-link <?= $activePage === 'employees' ? 'active' : '' ?>"><i class="bi bi-person-badge"></i> <span>Employees</span></a></li>
-            <li class="nav-item"><a href="payroll_view.php" class="nav-link <?= $activePage === 'payroll' ? 'active' : '' ?>"><i class="bi bi-person-badge"></i> <span>Payroll</span></a></li>
-            <li class="nav-item"><a href="pending_bookings.php" class="nav-link <?= $activePage === 'pending_bookings' ? 'active' : '' ?>"><i class="bi bi-person-badge"></i> <span>Booking Request</span></a></li>
-            <li class="nav-item"><a href="trucks.php" class="nav-link <?= $activePage === 'trucks' ? 'active' : '' ?>"><i class="bi bi-person-badge"></i> <span>Truck Assign</span></a></li>
-
+            <li class="nav-item"><a href="payslip.php" class="nav-link <?= $activePage === 'payslip' ? 'active' : '' ?>"><i class="bi bi-receipt"></i> <span>Payslip</span></a></li>
         </ul>
     </div>
 
