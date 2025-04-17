@@ -19,7 +19,7 @@ ob_start();
 
     <div class="card shadow mb-4">
         <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">Monthly Payroll Summary</h6>
+            <h6 class="m-0 font-weight-bold">Monthly Payroll Summary</h6>
         </div>
         <div class="card-body">
             <div class="table-responsive">
@@ -71,7 +71,7 @@ ob_start();
         <div class="col-md-6">
             <div class="card shadow mb-4">
                 <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">Driver Earnings Comparison</h6>
+                    <h6 class="m-0 font-weight-bold">Driver Earnings Comparison</h6>
                 </div>
                 <div class="card-body">
                     <canvas id="driverChart" height="200"></canvas>
@@ -81,7 +81,7 @@ ob_start();
         <div class="col-md-6">
             <div class="card shadow mb-4">
                 <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">Monthly Trends</h6>
+                    <h6 class="m-0 font-weight-bold">Monthly Trends</h6>
                 </div>
                 <div class="card-body">
                     <canvas id="monthlyChart" height="200"></canvas>

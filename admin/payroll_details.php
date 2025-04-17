@@ -39,7 +39,7 @@ ob_start();
 
     <div class="card shadow mb-4">
         <div class="card-header py-3 d-flex justify-content-between align-items-center">
-            <h6 class="m-0 font-weight-bold text-primary">
+            <h6 class="m-0 font-weight-bold">
                 <?= htmlspecialchars($payroll['full_name']) ?> - Payroll #<?= $payroll['payroll_id'] ?>
             </h6>
             <span class="badge <?= $payroll['payment_status'] == 'Paid' ? 'bg-success' : 'bg-warning' ?>">
@@ -85,7 +85,7 @@ ob_start();
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="col-md-6">
                     <div class="card mb-4">
                         <div class="card-header bg-primary text-white">
@@ -113,14 +113,7 @@ ob_start();
                                     <td>Truck Maintenance (₱200/delivery):</td>
                                     <td class="text-end">₱<?= number_format($payroll['truck_maintenance'], 2) ?></td>
                                 </tr>
-                                <tr>
-                                    <td>Loan Deductions:</td>
-                                    <td class="text-end">₱<?= number_format($payroll['loan_deduction'], 2) ?></td>
-                                </tr>
-                                <tr>
-                                    <td>Other Deductions:</td>
-                                    <td class="text-end">₱<?= number_format($payroll['other_deduction'], 2) ?></td>
-                                </tr>
+
                                 <tr class="table-active">
                                     <th>Total Deductions:</th>
                                     <th class="text-end">₱<?= number_format($payroll['deductions'], 2) ?></th>
@@ -137,16 +130,15 @@ ob_start();
                                         ['philhealth_deduction', 'PhilHealth', 'bg-primary'],
                                         ['pagibig_deduction', 'Pag-IBIG', 'bg-warning'],
                                         ['tax_deduction', 'Tax', 'bg-danger'],
-                                        ['truck_maintenance', 'Truck', 'bg-secondary'],
-                                        ['loan_deduction', 'Loans', 'bg-dark'],
-                                        ['other_deduction', 'Others', 'bg-light']
+                                        ['truck_maintenance', 'Truck', 'bg-secondary']
                                     ];
 
                                     foreach ($items as $item) {
                                         if ($payroll[$item[0]] > 0) {
                                             $width = ($payroll[$item[0]] / $total) * 100;
                                             echo '<div class="progress-bar ' . $item[2] . '" role="progressbar" style="width: ' . $width . '%" 
-                                  title="' . $item[1] . ': ₱' . number_format($payroll[$item[0]], 2) . '"></div>';
+                  data-bs-toggle="tooltip" data-bs-placement="top" 
+                  title="' . $item[1] . ': ₱' . number_format($payroll[$item[0]], 2) . '"></div>';
                                         }
                                     }
                                     ?>
@@ -174,6 +166,15 @@ ob_start();
         </div>
     </div>
 </div>
+<script>
+    // Initialize tooltips on document ready
+    document.addEventListener('DOMContentLoaded', function() {
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.map(function(tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+    });
+</script>
 
 <?php
 $content = ob_get_clean();

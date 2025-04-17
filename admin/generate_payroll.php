@@ -12,7 +12,7 @@ $alert_class = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['month'], $_POST['year'])) {
     $month = $_POST['month'];
     $year = $_POST['year'];
-    
+
     // Calculate exact date range for the selected month/year
     $start_date = date('Y-m-01', strtotime("$year-$month-01"));
     $end_date = date('Y-m-t', strtotime("$year-$month-01")); // 't' gives last day of month
@@ -28,7 +28,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['month'], $_POST['year
                                WHERE pay_period_start = ? AND pay_period_end = ?");
         $check->bind_param("ss", $start_date, $end_date);
         $check->execute();
-        
+
         if ($check->get_result()->num_rows > 0) {
             throw new Exception("Payroll already exists for " . date('F Y', strtotime($start_date)));
         }
@@ -51,7 +51,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['month'], $_POST['year
         $drivers = $driver_query->get_result();
 
         // 3. Base salary configuration
-        $base_salary = 10000.00; // Default base salary
+        $base_salary = 7000.00;
 
         // 4. Prepare payroll insert statement
         $insert = $con->prepare("
@@ -67,23 +67,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['month'], $_POST['year
         // 5. Process each driver's payroll
         while ($driver = $drivers->fetch_assoc()) {
             $deliveries = $driver['completed_deliveries'];
-            
-            // Calculate earnings
-            $bonuses = $deliveries * 500; // ₱500 per delivery
-            
-            // Calculate deductions
-            $sss = $base_salary * 0.045;         // SSS 4.5%
-            $philhealth = $base_salary * 0.025;  // PhilHealth 2.5%
-            $pagibig = ($base_salary > 1500) ? $base_salary * 0.02 : 0; // Pag-IBIG 2% if > ₱1500
-            $truck_fee = $deliveries * 200;      // ₱200 per delivery for maintenance
-            $tax = calculateTax($base_salary + $bonuses); // Tax calculation
-            
-            // Total deductions
+
+            // Performance-based earnings (higher incentive per delivery)
+            $bonuses = $deliveries * 750; // Increased from 500 to 750 per delivery
+
+            // Reduced fixed deductions
+            $sss = $base_salary * 0.03;         // Reduced from 4.5% to 3%
+            $philhealth = $base_salary * 0.02;  // Reduced from 2.5% to 2%
+            $pagibig = ($base_salary > 1500) ? $base_salary * 0.01 : 0; // Reduced from 2% to 1%
+
+            // Variable truck maintenance fee based on revenue
+            $truck_fee = $deliveries * 150;     // Reduced from 200 to 150 per delivery
+
+            // Progressive tax calculation remains the same
+            $tax = calculateTax($base_salary + $bonuses);
+
+            // Total deductions (now significantly lower)
             $total_deductions = $sss + $philhealth + $pagibig + $truck_fee + $tax;
-            
-            // Calculate net pay
+
+            // Calculate net pay (now more favorable)
             $net_pay = ($base_salary + $bonuses) - $total_deductions;
-            
+
             // Insert payroll record
             $insert->bind_param(
                 "issiddddddddd",
@@ -106,10 +110,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['month'], $_POST['year
         }
 
         $con->commit();
-        $message = "Successfully generated payroll for " . date('F Y', strtotime($start_date)) . 
-                  " ($processed_drivers drivers processed)";
+        $message = "Successfully generated payroll for " . date('F Y', strtotime($start_date)) .
+            " ($processed_drivers drivers processed)";
         $alert_class = 'alert-success';
-
     } catch (Exception $e) {
         $con->rollback();
         $message = "Error: " . $e->getMessage();
@@ -118,9 +121,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['month'], $_POST['year
 }
 
 // Philippine tax calculation function
-function calculateTax($monthly_income) {
+function calculateTax($monthly_income)
+{
     $annual = $monthly_income * 12;
-    
+
     if ($annual <= 250000) return 0;
     elseif ($annual <= 400000) return ($annual - 250000) * 0.15 / 12;
     elseif ($annual <= 800000) return (22500 + ($annual - 400000) * 0.20) / 12;
@@ -132,11 +136,11 @@ function calculateTax($monthly_income) {
 
 <div class="container-fluid">
     <h1 class="mb-4">Generate Payroll</h1>
-    
+
     <?php if ($message): ?>
         <div class="alert <?= $alert_class ?>"><?= $message ?></div>
     <?php endif; ?>
-    
+
     <div class="card shadow">
         <div class="card-header py-3">
             <h5 class="m-0 font-weight-bold text-primary">Select Payroll Period</h5>
@@ -151,10 +155,18 @@ function calculateTax($monthly_income) {
                                 <option value="">-- Select Month --</option>
                                 <?php
                                 $months = [
-                                    '01' => 'January', '02' => 'February', '03' => 'March',
-                                    '04' => 'April', '05' => 'May', '06' => 'June',
-                                    '07' => 'July', '08' => 'August', '09' => 'September',
-                                    '10' => 'October', '11' => 'November', '12' => 'December'
+                                    '01' => 'January',
+                                    '02' => 'February',
+                                    '03' => 'March',
+                                    '04' => 'April',
+                                    '05' => 'May',
+                                    '06' => 'June',
+                                    '07' => 'July',
+                                    '08' => 'August',
+                                    '09' => 'September',
+                                    '10' => 'October',
+                                    '11' => 'November',
+                                    '12' => 'December'
                                 ];
                                 $currentMonth = date('m');
                                 foreach ($months as $num => $name) {
@@ -181,7 +193,7 @@ function calculateTax($monthly_income) {
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="form-group mt-4">
                     <button type="submit" class="btn btn-primary">
                         <i class="bi bi-calculator"></i> Generate Payroll

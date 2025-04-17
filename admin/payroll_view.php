@@ -47,6 +47,16 @@ ob_start();
                         $result = mysqli_query($con, $sql);
 
                         while($row = mysqli_fetch_assoc($result)):
+                            // Calculate deliveries for this payroll period
+                            $deliveries_sql = "SELECT COUNT(*) AS delivery_count 
+                                              FROM deliveries d
+                                              JOIN schedules s ON d.schedule_id = s.schedule_id
+                                              WHERE s.driver_id = {$row['driver_id']}
+                                              AND d.delivery_status = 'Completed'
+                                              AND d.delivery_datetime BETWEEN '{$row['pay_period_start']}' AND '{$row['pay_period_end']}'";
+                            $deliveries_result = mysqli_query($con, $deliveries_sql);
+                            $deliveries_data = mysqli_fetch_assoc($deliveries_result);
+                            $delivery_count = $deliveries_data['delivery_count'] ?? 0;
                         ?>
                         <tr>
                             <td><?= htmlspecialchars($row['full_name']) ?></td>
@@ -55,7 +65,7 @@ ob_start();
                                 <small>to <?= date('M j, Y', strtotime($row['pay_period_end'])) ?></small>
                             </td>
                             <td class="text-end">₱<?= number_format($row['base_salary'], 2) ?></td>
-                            <td class="text-center"><?= $row['total_deliveries'] ?></td>
+                            <td class="text-center"><?= $delivery_count ?></td>
                             <td class="text-end">₱<?= number_format($row['bonuses'], 2) ?></td>
                             <td class="text-end">₱<?= number_format($row['deductions'], 2) ?></td>
                             <td class="text-end font-weight-bold">₱<?= number_format($row['net_pay'], 2) ?></td>

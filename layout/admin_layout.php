@@ -177,41 +177,154 @@
             text-align: left;
         }
 
-        #calendar {
+        /* #calendar {
             max-width: 900px;
             margin: 20px auto;
             padding: 10px;
             background-color: #fff;
             border-radius: 10px;
             box-shadow: 0px 0px 10px #ccc;
-        }
+        } */
+
         .card {
             border: none;
             border-radius: 10px;
         }
+
         .card-header {
             background-color: #364C84;
             color: white;
             border-radius: 10px 10px 0 0 !important;
         }
+
         .form-control {
             height: 45px;
             border: 1px solid #ddd;
             border-radius: 5px;
             transition: all 0.3s;
         }
+
         .form-control:focus {
             border-color: #364C84;
             box-shadow: 0 0 0 0.2rem rgba(54, 76, 132, 0.25);
         }
+
         .btn-primary {
             background-color: #364C84;
             border-color: #364C84;
         }
+
         .btn-primary:hover {
             background-color: #2F3E6E;
             border-color: #2F3E6E;
         }
+
+        /* Calendar container */
+        #calendar {
+            font-family: 'Bruno Ace', sans-serif;
+            background-color: white;
+            border-radius: 8px;
+        }
+
+        /* Calendar header */
+        .fc-header-toolbar {
+            padding: 10px;
+            margin-bottom: 10px !important;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        /* Calendar buttons */
+        .fc-button {
+            background-color: #364C84 !important;
+            border-color: #364C84 !important;
+            color: white !important;
+            padding: 6px 12px;
+            font-size: 14px;
+            border-radius: 4px !important;
+        }
+
+        .fc-button:hover {
+            background-color: #2F3E6E !important;
+            border-color: #2F3E6E !important;
+        }
+
+        .fc-button-active {
+            background-color: #1a2a57 !important;
+            border-color: #1a2a57 !important;
+        }
+
+        /* Calendar event styling */
+        .fc-event {
+            border-radius: 4px;
+            border: none;
+            padding: 3px 6px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .fc-event:hover {
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            transform: translateY(-1px);
+        }
+
+        /* Event colors based on status */
+        .fc-event-completed {
+            background-color: #28a745;
+            border-color: #28a745;
+        }
+
+        .fc-event-pending {
+            background-color: #ffc107;
+            border-color: #ffc107;
+            color: #212529;
+        }
+
+        .fc-event-in-transit {
+            background-color: #17a2b8;
+            border-color: #17a2b8;
+        }
+
+        /* Today's date highlight */
+        .fc-day-today {
+            background-color: rgba(54, 76, 132, 0.1) !important;
+        }
+
+        /* Calendar header cells */
+        .fc-col-header-cell {
+            background-color: #364C84;
+            color: white;
+            padding: 8px 0;
+        }
+
+        /* Calendar day cells */
+        .fc-daygrid-day {
+            transition: background-color 0.3s;
+        }
+
+        .fc-daygrid-day:hover {
+            background-color: rgba(54, 76, 132, 0.05);
+        }
+        .chart-container {
+    width: 100%;
+    min-height: 300px;
+}
+#truckChart, #driverChart {
+    min-height: 400px;
+}
+.card {
+    margin-bottom: 20px;
+}
+.table th {
+    white-space: nowrap;
+}
+.text-success {
+    color: #1cc88a !important;
+}
+.text-danger {
+    color: #e74a3b !important;
+}
     </style>
 </head>
 
@@ -240,15 +353,46 @@
             <span>Menu</span>
         </div>
         <ul class="nav flex-column">
-            <li class="nav-item"><a href="dashboard.php" class="nav-link <?= $activePage === 'dashboard' ? 'active' : '' ?>"><i class="bi bi-speedometer2"></i> <span>Dashboard</span></a></li>
-            <li class="nav-item"><a href="schedules.php" class="nav-link <?= $activePage === 'schedules' ? 'active' : '' ?>"><i class="bi bi-box-seam"></i> <span>Schedules</span></a></li>
-            <li class="nav-item"><a href="reports.php" class="nav-link <?= $activePage === 'reports' ? 'active' : '' ?>"><i class="bi bi-receipt"></i> <span>Reports</span></a></li>
-            <li class="nav-item"><a href="clients.php" class="nav-link <?= $activePage === 'clients' ? 'active' : '' ?>"><i class="bi bi-people"></i> <span>Clients</span></a></li>
-            <li class="nav-item"><a href="employees.php" class="nav-link <?= $activePage === 'employees' ? 'active' : '' ?>"><i class="bi bi-person-badge"></i> <span>Employees</span></a></li>
-            <li class="nav-item"><a href="payroll_view.php" class="nav-link <?= $activePage === 'payroll' ? 'active' : '' ?>"><i class="bi bi-person-badge"></i> <span>Payroll</span></a></li>
-            <li class="nav-item"><a href="pending_bookings.php" class="nav-link <?= $activePage === 'pending_bookings' ? 'active' : '' ?>"><i class="bi bi-person-badge"></i> <span>Booking Request</span></a></li>
-            <li class="nav-item"><a href="trucks.php" class="nav-link <?= $activePage === 'trucks' ? 'active' : '' ?>"><i class="bi bi-person-badge"></i> <span>Truck Assign</span></a></li>
-
+            <li class="nav-item">
+                <a href="dashboard.php" class="nav-link <?= $activePage === 'dashboard' ? 'active' : '' ?>">
+                    <i class="bi bi-speedometer2"></i> <span>Dashboard</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="schedules.php" class="nav-link <?= $activePage === 'schedules' ? 'active' : '' ?>">
+                    <i class="bi bi-calendar-check"></i> <span>Schedules</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="reports.php" class="nav-link <?= $activePage === 'reports' ? 'active' : '' ?>">
+                    <i class="bi bi-file-earmark-bar-graph"></i> <span>Reports</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="clients.php" class="nav-link <?= $activePage === 'clients' ? 'active' : '' ?>">
+                    <i class="bi bi-people-fill"></i> <span>Clients</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="employees.php" class="nav-link <?= $activePage === 'employees' ? 'active' : '' ?>">
+                    <i class="bi bi-person-vcard"></i> <span>Employees</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="payroll_view.php" class="nav-link <?= $activePage === 'payroll' ? 'active' : '' ?>">
+                    <i class="bi bi-cash-stack"></i> <span>Payrolls</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="pending_bookings.php" class="nav-link <?= $activePage === 'pending_bookings' ? 'active' : '' ?>">
+                    <i class="bi bi-clock-history"></i> <span>Booking Request</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="trucks.php" class="nav-link <?= $activePage === 'trucks' ? 'active' : '' ?>">
+                    <i class="bi bi-truck"></i> <span>Trucks</span>
+                </a>
+            </li>
         </ul>
     </div>
 
