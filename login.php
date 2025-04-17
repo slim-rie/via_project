@@ -30,7 +30,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     $redirect = 'driver/schedules.php';
                     break;
                 case 'customer':
-                    $redirect = 'client/booking.php';
+                    $redirect = 'client/home.php';
                     break;
                 default:
                     // Optional: handle unexpected role
