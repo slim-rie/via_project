@@ -3,6 +3,14 @@ require '../dbcon.php';
 $title = "Client Management";
 $activePage = "clients";
 ob_start();
+session_start();
+
+// Check if the user is logged in and is an admin
+if (!isset($_SESSION['user_id']) || strtolower($_SESSION['role']) !== "admin") {
+    header("Location: ../login.php");
+    exit();
+}
+
 ?>
 
 <div class="container-fluid">

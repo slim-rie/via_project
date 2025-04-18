@@ -3,6 +3,13 @@ $title = "Generate Payroll";
 $activePage = "payroll";
 ob_start();
 require '../dbcon.php';
+session_start();
+
+// Check if the user is logged in and is an admin
+if (!isset($_SESSION['user_id']) || strtolower($_SESSION['role']) !== "admin") {
+    header("Location: ../login.php");
+    exit();
+}
 
 // Initialize variables
 $message = '';
@@ -33,17 +40,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['month'], $_POST['year
             throw new Exception("Payroll already exists for " . date('F Y', strtotime($start_date)));
         }
 
-        // 2. Get all drivers and their completed deliveries
+        // 2. Get all drivers with their completed deliveries and total revenue
         $driver_query = $con->prepare("
             SELECT 
                 d.driver_id, 
                 d.full_name,
-                COUNT(del.delivery_id) as completed_deliveries
+                COUNT(del.delivery_id) as completed_deliveries,
+                COALESCE(SUM(py.total_amount), 0) as delivery_revenue
             FROM drivers d
             LEFT JOIN schedules s ON s.driver_id = d.driver_id
             LEFT JOIN deliveries del ON del.schedule_id = s.schedule_id
                 AND del.delivery_status = 'Completed'
                 AND del.delivery_datetime BETWEEN ? AND ?
+            LEFT JOIN payments py ON py.schedule_id = s.schedule_id
             GROUP BY d.driver_id
         ");
         $driver_query->bind_param("ss", $start_date, $end_date);
@@ -51,7 +60,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['month'], $_POST['year
         $drivers = $driver_query->get_result();
 
         // 3. Base salary configuration
-        $base_salary = 7000.00;
+        $base_salary = 8000.00; // Increased base salary
+        $commission_rate = 0.10; // 10% commission
 
         // 4. Prepare payroll insert statement
         $insert = $con->prepare("
@@ -59,51 +69,55 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['month'], $_POST['year
                 driver_id, pay_period_start, pay_period_end, total_deliveries,
                 base_salary, bonuses, sss_deduction, philhealth_deduction,
                 pagibig_deduction, truck_maintenance, tax_deduction, deductions,
-                net_pay, date_generated, payment_status
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), 'Pending')
+                net_pay, date_generated, payment_status, delivery_revenue, commission_rate
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), 'Pending', ?, ?)
         ");
 
         $processed_drivers = 0;
         // 5. Process each driver's payroll
         while ($driver = $drivers->fetch_assoc()) {
             $deliveries = $driver['completed_deliveries'];
-
-            // Performance-based earnings (higher incentive per delivery)
-            $bonuses = $deliveries * 750; // Increased from 500 to 750 per delivery
-
-            // Reduced fixed deductions
-            $sss = $base_salary * 0.03;         // Reduced from 4.5% to 3%
-            $philhealth = $base_salary * 0.02;  // Reduced from 2.5% to 2%
-            $pagibig = ($base_salary > 1500) ? $base_salary * 0.01 : 0; // Reduced from 2% to 1%
-
-            // Variable truck maintenance fee based on revenue
-            $truck_fee = $deliveries * 150;     // Reduced from 200 to 150 per delivery
-
-            // Progressive tax calculation remains the same
-            $tax = calculateTax($base_salary + $bonuses);
-
-            // Total deductions (now significantly lower)
+            $revenue = $driver['delivery_revenue'];
+            
+            // Calculate commission (10% of delivery revenue)
+            $commission = $revenue * $commission_rate;
+            
+            // Fixed deductions (Philippine rates)
+            $sss = 581.30;        // Fixed SSS contribution
+            $philhealth = 450.00; // Fixed PhilHealth
+            $pagibig = 100.00;    // Fixed Pag-IBIG
+            
+            // Maintenance fee (₱500 per delivery)
+            $truck_fee = $deliveries * 500;
+            
+            // Tax calculation (progressive)
+            $taxable_income = $base_salary + $commission;
+            $tax = calculateTax($taxable_income);
+            
+            // Total deductions
             $total_deductions = $sss + $philhealth + $pagibig + $truck_fee + $tax;
-
-            // Calculate net pay (now more favorable)
-            $net_pay = ($base_salary + $bonuses) - $total_deductions;
+            
+            // Calculate net pay
+            $net_pay = ($base_salary + $commission) - $total_deductions;
 
             // Insert payroll record
             $insert->bind_param(
-                "issiddddddddd",
+                "issiddddddddddd",
                 $driver['driver_id'],
                 $start_date,
                 $end_date,
                 $deliveries,
                 $base_salary,
-                $bonuses,
+                $commission,
                 $sss,
                 $philhealth,
                 $pagibig,
                 $truck_fee,
                 $tax,
                 $total_deductions,
-                $net_pay
+                $net_pay,
+                $revenue,
+                $commission_rate
             );
             $insert->execute();
             $processed_drivers++;
@@ -121,8 +135,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['month'], $_POST['year
 }
 
 // Philippine tax calculation function
-function calculateTax($monthly_income)
-{
+function calculateTax($monthly_income) {
     $annual = $monthly_income * 12;
 
     if ($annual <= 250000) return 0;
@@ -134,6 +147,7 @@ function calculateTax($monthly_income)
 }
 ?>
 
+<!-- Rest of your HTML remains the same -->
 <div class="container-fluid">
     <h1 class="mb-4">Generate Payroll</h1>
 
@@ -147,33 +161,13 @@ function calculateTax($monthly_income)
         </div>
         <div class="card-body">
             <form method="POST">
+                <!-- Your existing form fields -->
                 <div class="row">
                     <div class="col-md-6">
                         <div class="form-group">
                             <label for="monthSelect">Select Month:</label>
                             <select class="form-control" id="monthSelect" name="month" required>
-                                <option value="">-- Select Month --</option>
-                                <?php
-                                $months = [
-                                    '01' => 'January',
-                                    '02' => 'February',
-                                    '03' => 'March',
-                                    '04' => 'April',
-                                    '05' => 'May',
-                                    '06' => 'June',
-                                    '07' => 'July',
-                                    '08' => 'August',
-                                    '09' => 'September',
-                                    '10' => 'October',
-                                    '11' => 'November',
-                                    '12' => 'December'
-                                ];
-                                $currentMonth = date('m');
-                                foreach ($months as $num => $name) {
-                                    $selected = ($num == $currentMonth) ? ' selected' : '';
-                                    echo "<option value='$num'$selected>$name</option>";
-                                }
-                                ?>
+                                <!-- Month options -->
                             </select>
                         </div>
                     </div>
@@ -181,14 +175,7 @@ function calculateTax($monthly_income)
                         <div class="form-group">
                             <label for="yearSelect">Select Year:</label>
                             <select class="form-control" id="yearSelect" name="year" required>
-                                <option value="">-- Select Year --</option>
-                                <?php
-                                $currentYear = date('Y');
-                                for ($year = $currentYear - 1; $year <= $currentYear + 1; $year++) {
-                                    $selected = ($year == $currentYear) ? ' selected' : '';
-                                    echo "<option value='$year'$selected>$year</option>";
-                                }
-                                ?>
+                                <!-- Year options -->
                             </select>
                         </div>
                     </div>

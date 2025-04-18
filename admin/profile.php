@@ -2,6 +2,7 @@
 $title = "Profile";
 $activePage = "profile";
 ob_start();
+session_start();
 ?>
 
 <h1>Welcome to the profile</h1>

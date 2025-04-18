@@ -1,9 +1,15 @@
 <?php
 // payroll_details.php
 require '../dbcon.php';
-
 $title = "Payroll Details";
 $activePage = "payroll";
+session_start();
+
+// Check if the user is logged in and is an admin
+if (!isset($_SESSION['user_id']) || strtolower($_SESSION['role']) !== "admin") {
+    header("Location: ../login.php");
+    exit();
+}
 
 if (!isset($_GET['id'])) {
     header("Location: payroll_view.php");
@@ -74,8 +80,12 @@ ob_start();
                                     <td class="text-end">₱<?= number_format($payroll['base_salary'], 2) ?></td>
                                 </tr>
                                 <tr>
-                                    <td>Delivery Bonuses (<?= $payroll['total_deliveries'] ?> deliveries):</td>
+                                    <td>Commission (<?= ($payroll['commission_rate']*100) ?>% of ₱<?= number_format($payroll['delivery_revenue'], 2) ?>):</td>
                                     <td class="text-end">₱<?= number_format($payroll['bonuses'], 2) ?></td>
+                                </tr>
+                                <tr>
+                                    <td>Total Deliveries:</td>
+                                    <td class="text-end"><?= $payroll['total_deliveries'] ?></td>
                                 </tr>
                                 <tr class="table-active">
                                     <th>Total Earnings:</th>
@@ -94,15 +104,15 @@ ob_start();
                         <div class="card-body">
                             <table class="table table-borderless">
                                 <tr>
-                                    <td>SSS Contribution (4.5%):</td>
+                                    <td>SSS Contribution:</td>
                                     <td class="text-end">₱<?= number_format($payroll['sss_deduction'], 2) ?></td>
                                 </tr>
                                 <tr>
-                                    <td>PhilHealth Contribution (2.5%):</td>
+                                    <td>PhilHealth Contribution:</td>
                                     <td class="text-end">₱<?= number_format($payroll['philhealth_deduction'], 2) ?></td>
                                 </tr>
                                 <tr>
-                                    <td>Pag-IBIG Fund (2%):</td>
+                                    <td>Pag-IBIG Fund:</td>
                                     <td class="text-end">₱<?= number_format($payroll['pagibig_deduction'], 2) ?></td>
                                 </tr>
                                 <tr>
@@ -110,7 +120,7 @@ ob_start();
                                     <td class="text-end">₱<?= number_format($payroll['tax_deduction'], 2) ?></td>
                                 </tr>
                                 <tr>
-                                    <td>Truck Maintenance (₱200/delivery):</td>
+                                    <td>Truck Maintenance (₱500/delivery):</td>
                                     <td class="text-end">₱<?= number_format($payroll['truck_maintenance'], 2) ?></td>
                                 </tr>
 
@@ -152,6 +162,9 @@ ob_start();
 
             <div class="alert alert-success">
                 <h4 class="alert-heading text-center">Net Pay: ₱<?= number_format($payroll['net_pay'], 2) ?></h4>
+                <p class="text-center mb-0">
+                    <small>Calculated as: (Base + Commission) - Deductions</small>
+                </p>
             </div>
         </div>
         <div class="card-footer text-center">

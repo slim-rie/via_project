@@ -1,8 +1,15 @@
 <?php
+include "../dbcon.php";
 $title = "Truck Management";
 $activePage = "trucks";
 ob_start();
-include "../dbcon.php";
+session_start();
+
+// Check if the user is logged in and is an admin
+if (!isset($_SESSION['user_id']) || strtolower($_SESSION['role']) !== "admin") {
+    header("Location: ../login.php");
+    exit();
+}
 
 // Handle add/update truck
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {

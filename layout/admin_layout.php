@@ -393,6 +393,11 @@
                     <i class="bi bi-truck"></i> <span>Trucks</span>
                 </a>
             </li>
+            <li class="nav-item">
+                <a href="admin_request.php" class="nav-link <?= $activePage === 'request' ? 'active' : '' ?>">
+                    <i class="bi bi-truck"></i> <span>Requests</span>
+                </a>
+            </li>
         </ul>
     </div>
 
