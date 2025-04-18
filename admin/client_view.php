@@ -3,6 +3,13 @@ require '../dbcon.php';
 $title = "Client Details";
 $activePage = "clients";
 ob_start();
+session_start();
+
+// Check if the user is logged in and is an admin
+if (!isset($_SESSION['user_id']) || strtolower($_SESSION['role']) !== "admin") {
+    header("Location: ../login.php");
+    exit();
+}
 
 if(isset($_GET['id'])) {
     $client_id = mysqli_real_escape_string($con, $_GET['id']);

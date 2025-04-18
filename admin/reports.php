@@ -3,7 +3,13 @@ require '../dbcon.php';
 $title = "Reports";
 $activePage = "reports";
 ob_start();
+session_start();
 
+// Check if the user is logged in and is an admin
+if (!isset($_SESSION['user_id']) || strtolower($_SESSION['role']) !== "admin") {
+    header("Location: ../login.php");
+    exit();
+}
 // Get available months/years for dropdown
 $months_query = mysqli_query($con, "SELECT DISTINCT DATE_FORMAT(date, '%Y-%m') as month_year FROM payments ORDER BY month_year DESC");
 $available_months = [];
