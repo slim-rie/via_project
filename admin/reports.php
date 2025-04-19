@@ -1,6 +1,6 @@
 <?php
 require '../dbcon.php';
-$title = "Reports";
+$title = "Sales Report";
 $activePage = "reports";
 ob_start();
 session_start();
@@ -10,6 +10,7 @@ if (!isset($_SESSION['user_id']) || strtolower($_SESSION['role']) !== "admin") {
     header("Location: ../login.php");
     exit();
 }
+
 // Get available months/years for dropdown
 $months_query = mysqli_query($con, "SELECT DISTINCT DATE_FORMAT(date, '%Y-%m') as month_year FROM payments ORDER BY month_year DESC");
 $available_months = [];
@@ -25,94 +26,102 @@ $selected_month = $_GET['month'] ?? end($available_months);
 if ($report_type === 'overall') {
     $start_date = '1970-01-01'; // Very early date to get all records
     $end_date = date('Y-m-t');  // End of current month
-    $date_label = "Overall Report (All Time)";
+    $date_label = "Overall Sales Report (All Time)";
 } else {
     $start_date = date('Y-m-01', strtotime($selected_month));
     $end_date = date('Y-m-t', strtotime($selected_month));
-    $date_label = date('F Y', strtotime($selected_month));
+    $date_label = "Sales Report for " . date('F Y', strtotime($selected_month));
 }
 
-// Get report data
-$revenue_report = [];
-$delivery_report = [];
-$truck_utilization = [];
-$driver_performance = [];
+// Get sales report data
+$sales_report = [];
+$customer_sales = [];
+$truck_sales = [];
+$driver_sales = [];
 
-// 1. Enhanced Revenue Report with Deductions - FIXED FOR OVERALL REPORT
-$revenue_query = mysqli_query($con, "SELECT 
+// 1. Main Sales Report
+$sales_query = mysqli_query($con, "SELECT 
     " . ($report_type === 'monthly' ? "DATE_FORMAT(p.date, '%Y-%m') AS month" : "'All Time' AS month") . ",
-    SUM(p.total_amount) AS gross_revenue,
-    " . ($report_type === 'monthly' ? 
-        "SUM(pl.net_pay) AS salary_deductions" : 
-        "(SELECT SUM(net_pay) FROM payroll WHERE pay_period_start BETWEEN '$start_date' AND '$end_date') AS salary_deductions") . ",
-    SUM(p.total_amount) - " . ($report_type === 'monthly' ? 
-        "SUM(pl.net_pay)" : 
-        "(SELECT SUM(net_pay) FROM payroll WHERE pay_period_start BETWEEN '$start_date' AND '$end_date')") . " AS net_revenue,
-    COUNT(p.payment_id) AS transaction_count
+    COUNT(p.payment_id) AS total_transactions,
+    SUM(p.total_amount) AS total_sales,
+    AVG(p.total_amount) AS average_sale,
+    MIN(p.total_amount) AS min_sale,
+    MAX(p.total_amount) AS max_sale
     FROM payments p
-    " . ($report_type === 'monthly' ? 
-        "LEFT JOIN payroll pl ON DATE_FORMAT(pl.pay_period_start, '%Y-%m') = DATE_FORMAT(p.date, '%Y-%m')" : "") . "
     WHERE p.date BETWEEN '$start_date' AND '$end_date'
     " . ($report_type === 'monthly' ? "GROUP BY month" : "") . "
     ORDER BY p.date DESC") or die(mysqli_error($con));
 
-while ($row = mysqli_fetch_assoc($revenue_query)) {
-    $revenue_report[] = $row;
+while ($row = mysqli_fetch_assoc($sales_query)) {
+    $sales_report[] = $row;
 }
 
-// 2. Delivery Performance - WORKS FOR BOTH
-$delivery_query = mysqli_query($con, "SELECT 
-    d.delivery_status,
-    COUNT(*) AS count,
-    ROUND(COUNT(*)/(SELECT COUNT(*) FROM deliveries WHERE delivery_datetime BETWEEN '$start_date' AND '$end_date')*100,1) AS percentage
-    FROM deliveries d
-    WHERE d.delivery_datetime BETWEEN '$start_date' AND '$end_date'
-    GROUP BY d.delivery_status") or die(mysqli_error($con));
+// 2. Sales by Customer
+$customer_query = mysqli_query($con, "SELECT 
+    c.full_name AS customer_name,
+    COUNT(p.payment_id) AS transaction_count,
+    SUM(p.total_amount) AS total_spent,
+    AVG(p.total_amount) AS avg_spent
+    FROM payments p
+    JOIN schedules s ON p.schedule_id = s.schedule_id
+    JOIN customers c ON s.customer_id = c.customer_id
+    WHERE p.date BETWEEN '$start_date' AND '$end_date'
+    GROUP BY c.customer_id
+    ORDER BY total_spent DESC") or die(mysqli_error($con));
 
-while ($row = mysqli_fetch_assoc($delivery_query)) {
-    $delivery_report[] = $row;
+while ($row = mysqli_fetch_assoc($customer_query)) {
+    $customer_sales[] = $row;
 }
 
-// 3. Truck Utilization with Cost Analysis - FIXED FOR OVERALL REPORT
+// 3. Sales by Truck
 $truck_query = mysqli_query($con, "SELECT 
     t.truck_no,
-    COUNT(s.schedule_id) AS deliveries_count,
-    SUM(TIMESTAMPDIFF(HOUR, s.start_time, s.end_time)) AS hours_utilized,
+    COUNT(p.payment_id) AS delivery_count,
     SUM(p.total_amount) AS revenue_generated,
-    " . ($report_type === 'monthly' ? 
-        "SUM(pl.net_pay) AS driver_costs" : 
-        "(SELECT SUM(net_pay) FROM payroll pl WHERE pl.driver_id = s.driver_id AND pl.pay_period_start BETWEEN '$start_date' AND '$end_date') AS driver_costs") . "
+    AVG(p.total_amount) AS avg_revenue_per_delivery
     FROM trucks t
-    LEFT JOIN schedules s ON t.truck_id = s.truck_id AND s.start_time BETWEEN '$start_date' AND '$end_date'
-    LEFT JOIN payments p ON s.schedule_id = p.schedule_id
-    " . ($report_type === 'monthly' ? 
-        "LEFT JOIN payroll pl ON s.driver_id = pl.driver_id AND DATE_FORMAT(pl.pay_period_start, '%Y-%m') = DATE_FORMAT(s.start_time, '%Y-%m')" : "") . "
-    GROUP BY t.truck_id") or die(mysqli_error($con));
+    JOIN schedules s ON t.truck_id = s.truck_id
+    JOIN payments p ON s.schedule_id = p.schedule_id
+    WHERE p.date BETWEEN '$start_date' AND '$end_date'
+    GROUP BY t.truck_id
+    ORDER BY revenue_generated DESC") or die(mysqli_error($con));
 
 while ($row = mysqli_fetch_assoc($truck_query)) {
-    $truck_utilization[] = $row;
+    $truck_sales[] = $row;
 }
 
-// 4. Driver Performance with Cost Efficiency - FIXED FOR OVERALL REPORT
+// 4. Sales by Driver
 $driver_query = mysqli_query($con, "SELECT 
-    d.full_name,
-    COUNT(s.schedule_id) AS deliveries_completed,
+    d.full_name AS driver_name,
+    COUNT(p.payment_id) AS delivery_count,
     SUM(p.total_amount) AS revenue_generated,
-    " . ($report_type === 'monthly' ? 
-        "SUM(pl.net_pay) AS salary_cost" : 
-        "(SELECT SUM(net_pay) FROM payroll pl WHERE pl.driver_id = d.driver_id AND pl.pay_period_start BETWEEN '$start_date' AND '$end_date') AS salary_cost") . ",
-    ROUND(SUM(p.total_amount)/GREATEST(" . ($report_type === 'monthly' ? 
-        "SUM(pl.net_pay)" : 
-        "(SELECT SUM(net_pay) FROM payroll pl WHERE pl.driver_id = d.driver_id AND pl.pay_period_start BETWEEN '$start_date' AND '$end_date')") . ", 1), 2) AS revenue_per_cost
+    AVG(p.total_amount) AS avg_revenue_per_delivery
     FROM drivers d
-    LEFT JOIN schedules s ON d.driver_id = s.driver_id AND s.start_time BETWEEN '$start_date' AND '$end_date'
-    LEFT JOIN payments p ON s.schedule_id = p.schedule_id
-    " . ($report_type === 'monthly' ? 
-        "LEFT JOIN payroll pl ON d.driver_id = pl.driver_id AND DATE_FORMAT(pl.pay_period_start, '%Y-%m') = DATE_FORMAT(s.start_time, '%Y-%m')" : "") . "
-    GROUP BY d.driver_id") or die(mysqli_error($con));
+    JOIN schedules s ON d.driver_id = s.driver_id
+    JOIN payments p ON s.schedule_id = p.schedule_id
+    WHERE p.date BETWEEN '$start_date' AND '$end_date'
+    GROUP BY d.driver_id
+    ORDER BY revenue_generated DESC") or die(mysqli_error($con));
 
 while ($row = mysqli_fetch_assoc($driver_query)) {
-    $driver_performance[] = $row;
+    $driver_sales[] = $row;
+}
+
+// 5. Daily Sales Trend (for monthly reports)
+$daily_sales = [];
+if ($report_type === 'monthly') {
+    $daily_query = mysqli_query($con, "SELECT 
+        DATE(date) AS sale_date,
+        COUNT(payment_id) AS transaction_count,
+        SUM(total_amount) AS daily_sales
+        FROM payments
+        WHERE date BETWEEN '$start_date' AND '$end_date'
+        GROUP BY sale_date
+        ORDER BY sale_date") or die(mysqli_error($con));
+    
+    while ($row = mysqli_fetch_assoc($daily_query)) {
+        $daily_sales[] = $row;
+    }
 }
 ?>
 <!-- Report Type Selector and Month Picker -->
@@ -148,67 +157,86 @@ while ($row = mysqli_fetch_assoc($driver_query)) {
         </form>
     </div>
 </div>
-<!-- Revenue Report Card - Enhanced -->
+
+<!-- Main Sales Summary Card -->
 <div class="card shadow mb-4">
     <div class="card-header py-3 d-flex justify-content-between align-items-center">
-        <h6 class="m-0 font-weight-bold">Profit & Loss Statement</h6>
-        <button class="btn btn-sm btn-primary" onclick="exportToCSV('revenueTable', 'profit_loss.csv')">
+        <h6 class="m-0 font-weight-bold">Sales Summary - <?= $date_label ?></h6>
+        <button class="btn btn-sm btn-primary" onclick="exportToCSV('salesSummaryTable', 'sales_summary.csv')">
             <i class="fas fa-download"></i> Export
         </button>
     </div>
     <div class="card-body">
         <div class="table-responsive">
-            <table class="table table-bordered" id="revenueTable">
+            <table class="table table-bordered" id="salesSummaryTable">
                 <thead>
                     <tr>
-                        <th>Month</th>
-                        <th>Gross Revenue</th>
-                        <th>Salary Deductions</th>
-                        <th>Net Revenue</th>
-                        <th>Profit Margin</th>
+                        <th>Period</th>
+                        <th>Transactions</th>
+                        <th>Total Sales</th>
+                        <th>Average Sale</th>
+                        <th>Min Sale</th>
+                        <th>Max Sale</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <?php foreach ($revenue_report as $row): ?>
+                    <?php foreach ($sales_report as $row): ?>
                         <tr>
-                            <td><?= date('F Y', strtotime($row['month'])) ?></td>
-                            <td>₱<?= number_format($row['gross_revenue'], 2) ?></td>
-                            <td class="text-danger">-₱<?= number_format($row['salary_deductions'], 2) ?></td>
-                            <td class="font-weight-bold">₱<?= number_format($row['net_revenue'], 2) ?></td>
-                            <td><?= $row['gross_revenue'] > 0 ? number_format(($row['net_revenue'] / $row['gross_revenue']) * 100, 2) : 0 ?>%</td>
+                            <td><?= $row['month'] === 'All Time' ? $row['month'] : date('F Y', strtotime($row['month'])) ?></td>
+                            <td><?= number_format($row['total_transactions']) ?></td>
+                            <td>₱<?= number_format($row['total_sales'], 2) ?></td>
+                            <td>₱<?= number_format($row['average_sale'], 2) ?></td>
+                            <td>₱<?= number_format($row['min_sale'], 2) ?></td>
+                            <td>₱<?= number_format($row['max_sale'], 2) ?></td>
                         </tr>
                     <?php endforeach; ?>
                 </tbody>
-                <?php if (count($revenue_report) > 1): ?>
-                    <tfoot>
-                        <tr class="font-weight-bold">
-                            <td>TOTAL</td>
-                            <td>₱<?= number_format(array_sum(array_column($revenue_report, 'gross_revenue')), 2) ?></td>
-                            <td class="text-danger">-₱<?= number_format(array_sum(array_column($revenue_report, 'salary_deductions')), 2) ?></td>
-                            <td>₱<?= number_format(array_sum(array_column($revenue_report, 'net_revenue')), 2) ?></td>
-                            <?php
-                            $total_gross = array_sum(array_column($revenue_report, 'gross_revenue'));
-                            $total_net = array_sum(array_column($revenue_report, 'net_revenue'));
-                            $profit_margin = $total_gross > 0 ? ($total_net / $total_gross) * 100 : 0;
-                            ?>
-                            <td><?= number_format($profit_margin, 2) ?>%</td>
-                        </tr>
-                    </tfoot>
-                <?php endif; ?>
             </table>
-        </div>
-        
-        <!-- Add Chart Canvas -->
-        <div class="mt-4">
-            <canvas id="profitChart" height="100"></canvas>
         </div>
     </div>
 </div>
 
-<!-- Truck Utilization Card - Enhanced -->
+<!-- Sales by Customer Card -->
 <div class="card shadow mb-4">
     <div class="card-header py-3">
-        <h6 class="m-0 font-weight-bold">Truck Profitability</h6>
+        <h6 class="m-0 font-weight-bold">Sales by Customer</h6>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Customer</th>
+                        <th>Transactions</th>
+                        <th>Total Spent</th>
+                        <th>Avg. per Transaction</th>
+                        <th>% of Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php 
+                    $total_sales = $sales_report[0]['total_sales'] ?? 0;
+                    foreach ($customer_sales as $row): 
+                        $percentage = $total_sales > 0 ? ($row['total_spent'] / $total_sales) * 100 : 0;
+                    ?>
+                        <tr>
+                            <td><?= $row['customer_name'] ?></td>
+                            <td><?= number_format($row['transaction_count']) ?></td>
+                            <td>₱<?= number_format($row['total_spent'], 2) ?></td>
+                            <td>₱<?= number_format($row['avg_spent'], 2) ?></td>
+                            <td><?= number_format($percentage, 1) ?>%</td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Sales by Truck Card -->
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold">Sales by Truck</h6>
     </div>
     <div class="card-body">
         <div class="table-responsive">
@@ -218,25 +246,20 @@ while ($row = mysqli_fetch_assoc($driver_query)) {
                         <th>Truck No.</th>
                         <th>Deliveries</th>
                         <th>Revenue</th>
-                        <th>Driver Costs</th>
-                        <th>Net Profit</th>
-                        <th>₱/Hour</th>
+                        <th>Avg. per Delivery</th>
+                        <th>% of Total</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <?php foreach ($truck_utilization as $row):
-                        $net_profit = $row['revenue_generated'] - $row['driver_costs'];
-                        $hourly_rate = $row['hours_utilized'] > 0 ? $net_profit / $row['hours_utilized'] : 0;
+                    <?php foreach ($truck_sales as $row): 
+                        $percentage = $total_sales > 0 ? ($row['revenue_generated'] / $total_sales) * 100 : 0;
                     ?>
                         <tr>
                             <td><?= $row['truck_no'] ?></td>
-                            <td><?= $row['deliveries_count'] ?></td>
+                            <td><?= number_format($row['delivery_count']) ?></td>
                             <td>₱<?= number_format($row['revenue_generated'], 2) ?></td>
-                            <td class="text-danger">-₱<?= number_format($row['driver_costs'], 2) ?></td>
-                            <td class="<?= $net_profit >= 0 ? 'text-success' : 'text-danger' ?>">
-                                ₱<?= number_format($net_profit, 2) ?>
-                            </td>
-                            <td>₱<?= number_format($hourly_rate, 2) ?></td>
+                            <td>₱<?= number_format($row['avg_revenue_per_delivery'], 2) ?></td>
+                            <td><?= number_format($percentage, 1) ?>%</td>
                         </tr>
                     <?php endforeach; ?>
                 </tbody>
@@ -245,10 +268,10 @@ while ($row = mysqli_fetch_assoc($driver_query)) {
     </div>
 </div>
 
-<!-- Driver Performance Card - Enhanced -->
+<!-- Sales by Driver Card -->
 <div class="card shadow mb-4">
     <div class="card-header py-3">
-        <h6 class="m-0 font-weight-bold">Driver Cost Efficiency</h6>
+        <h6 class="m-0 font-weight-bold">Sales by Driver</h6>
     </div>
     <div class="card-body">
         <div class="table-responsive">
@@ -257,21 +280,21 @@ while ($row = mysqli_fetch_assoc($driver_query)) {
                     <tr>
                         <th>Driver</th>
                         <th>Deliveries</th>
-                        <th>Revenue Generated</th>
-                        <th>Salary Cost</th>
-                        <th>Revenue ₱ per ₱ Salary</th>
+                        <th>Revenue</th>
+                        <th>Avg. per Delivery</th>
+                        <th>% of Total</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <?php foreach ($driver_performance as $row): ?>
+                    <?php foreach ($driver_sales as $row): 
+                        $percentage = $total_sales > 0 ? ($row['revenue_generated'] / $total_sales) * 100 : 0;
+                    ?>
                         <tr>
-                            <td><?= $row['full_name'] ?></td>
-                            <td><?= $row['deliveries_completed'] ?></td>
+                            <td><?= $row['driver_name'] ?></td>
+                            <td><?= number_format($row['delivery_count']) ?></td>
                             <td>₱<?= number_format($row['revenue_generated'], 2) ?></td>
-                            <td>₱<?= number_format($row['salary_cost'], 2) ?></td>
-                            <td class="<?= $row['revenue_per_cost'] >= 1 ? 'text-success' : 'text-danger' ?>">
-                                ₱<?= number_format($row['revenue_per_cost'], 2) ?>
-                            </td>
+                            <td>₱<?= number_format($row['avg_revenue_per_delivery'], 2) ?></td>
+                            <td><?= number_format($percentage, 1) ?>%</td>
                         </tr>
                     <?php endforeach; ?>
                 </tbody>
@@ -280,63 +303,43 @@ while ($row = mysqli_fetch_assoc($driver_query)) {
     </div>
 </div>
 
+<?php if ($report_type === 'monthly' && !empty($daily_sales)): ?>
+<!-- Daily Sales Trend Card -->
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold">Daily Sales Trend - <?= date('F Y', strtotime($selected_month)) ?></h6>
+    </div>
+    <div class="card-body">
+        <div class="chart-area">
+            <canvas id="dailySalesChart"></canvas>
+        </div>
+        <div class="mt-4 table-responsive">
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Transactions</th>
+                        <th>Daily Sales</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($daily_sales as $row): ?>
+                        <tr>
+                            <td><?= date('M j, Y', strtotime($row['sale_date'])) ?></td>
+                            <td><?= number_format($row['transaction_count']) ?></td>
+                            <td>₱<?= number_format($row['daily_sales'], 2) ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    // Profit/Loss Bar Chart
-    document.addEventListener('DOMContentLoaded', function() {
-        const profitCtx = document.getElementById('profitChart').getContext('2d');
-        new Chart(profitCtx, {
-            type: 'bar',
-            data: {
-                labels: [
-                    <?php foreach ($revenue_report as $row): ?> 
-                        '<?= date('M Y', strtotime($row['month'])) ?>',
-                    <?php endforeach; ?>
-                ],
-                datasets: [{
-                        label: 'Gross Revenue',
-                        data: [
-                            <?php foreach ($revenue_report as $row): ?>
-                                <?= $row['gross_revenue'] ?>,
-                            <?php endforeach; ?>
-                        ],
-                        backgroundColor: '#4e73df'
-                    },
-                    {
-                        label: 'Salary Deductions',
-                        data: [
-                            <?php foreach ($revenue_report as $row): ?> 
-                                -<?= $row['salary_deductions'] ?>,
-                            <?php endforeach; ?>
-                        ],
-                        backgroundColor: '#e74a3b'
-                    },
-                    {
-                        label: 'Net Revenue',
-                        data: [
-                            <?php foreach ($revenue_report as $row): ?>
-                                <?= $row['net_revenue'] ?>,
-                            <?php endforeach; ?>
-                        ],
-                        backgroundColor: '#1cc88a',
-                        type: 'line',
-                        borderColor: '#1cc88a',
-                        borderWidth: 2,
-                        fill: false
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                scales: {
-                    y: {
-                        beginAtZero: false
-                    }
-                }
-            }
-        });
-    });
-    
+    // Export to CSV function
     function exportToCSV(tableId, filename) {
         const table = document.getElementById(tableId);
         const rows = table.querySelectorAll('tr');
@@ -369,24 +372,132 @@ while ($row = mysqli_fetch_assoc($driver_query)) {
         link.click();
         document.body.removeChild(link);
     }
+
     function toggleReportType() {
-    const toggle = document.getElementById('reportTypeToggle');
-    const monthPicker = document.getElementById('monthPickerGroup');
-    const reportTypeInput = document.getElementById('reportTypeInput');
-    
-    if (toggle.checked) {
-        monthPicker.style.display = 'none';
-        reportTypeInput.value = 'overall';
-        document.querySelector('label[for="reportTypeToggle"]').textContent = 'Overall Report';
-    } else {
-        monthPicker.style.display = 'block';
-        reportTypeInput.value = 'monthly';
-        document.querySelector('label[for="reportTypeToggle"]').textContent = 'Monthly Report';
+        const toggle = document.getElementById('reportTypeToggle');
+        const monthPicker = document.getElementById('monthPickerGroup');
+        const reportTypeInput = document.getElementById('reportTypeInput');
+        
+        if (toggle.checked) {
+            monthPicker.style.display = 'none';
+            reportTypeInput.value = 'overall';
+            document.querySelector('label[for="reportTypeToggle"]').textContent = 'Overall Report';
+        } else {
+            monthPicker.style.display = 'block';
+            reportTypeInput.value = 'monthly';
+            document.querySelector('label[for="reportTypeToggle"]').textContent = 'Monthly Report';
+        }
+        
+        // Auto-submit the form when toggling
+        document.getElementById('reportForm').submit();
     }
-    
-    // Auto-submit the form when toggling
-    document.getElementById('reportForm').submit();
-}
+
+    // Daily Sales Chart (for monthly reports)
+    <?php if ($report_type === 'monthly' && !empty($daily_sales)): ?>
+    document.addEventListener('DOMContentLoaded', function() {
+        const ctx = document.getElementById('dailySalesChart').getContext('2d');
+        const dailySalesChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [
+                    <?php foreach ($daily_sales as $row): ?>
+                        '<?= date('j', strtotime($row['sale_date'])) ?>',
+                    <?php endforeach; ?>
+                ],
+                datasets: [{
+                    label: 'Daily Sales',
+                    data: [
+                        <?php foreach ($daily_sales as $row): ?>
+                            <?= $row['daily_sales'] ?>,
+                        <?php endforeach; ?>
+                    ],
+                    backgroundColor: 'rgba(78, 115, 223, 0.05)',
+                    borderColor: 'rgba(78, 115, 223, 1)',
+                    pointBackgroundColor: 'rgba(78, 115, 223, 1)',
+                    pointBorderColor: '#fff',
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: 'rgba(78, 115, 223, 1)',
+                    pointRadius: 3,
+                    pointHoverRadius: 3,
+                    pointHitRadius: 10,
+                    pointBorderWidth: 2,
+                    borderWidth: 2,
+                    fill: true
+                }]
+            },
+            options: {
+                maintainAspectRatio: false,
+                layout: {
+                    padding: {
+                        left: 10,
+                        right: 25,
+                        top: 25,
+                        bottom: 0
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: {
+                            display: false,
+                            drawBorder: false
+                        },
+                        ticks: {
+                            maxTicksLimit: 7
+                        }
+                    },
+                    y: {
+                        ticks: {
+                            maxTicksLimit: 5,
+                            padding: 10,
+                            callback: function(value, index, values) {
+                                return '₱' + value.toLocaleString();
+                            }
+                        },
+                        grid: {
+                            color: "rgb(234, 236, 244)",
+                            zeroLineColor: "rgb(234, 236, 244)",
+                            drawBorder: false,
+                            borderDash: [2],
+                            zeroLineBorderDash: [2]
+                        }
+                    },
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        backgroundColor: "rgb(255,255,255)",
+                        bodyColor: "#858796",
+                        titleMarginBottom: 10,
+                        titleColor: '#6e707e',
+                        titleFontSize: 14,
+                        borderColor: '#dddfeb',
+                        borderWidth: 1,
+                        xPadding: 15,
+                        yPadding: 15,
+                        displayColors: false,
+                        intersect: false,
+                        mode: 'index',
+                        caretPadding: 10,
+                        callbacks: {
+                            label: function(context) {
+                                var label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed.y !== null) {
+                                    label += '₱' + context.parsed.y.toLocaleString();
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    });
+    <?php endif; ?>
 </script>
 <?php
 $content = ob_get_clean();

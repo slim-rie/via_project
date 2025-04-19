@@ -6,8 +6,13 @@ require '../dbcon.php';
 session_start();
 
 // Check if the user is logged in and is an admin
-if (!isset($_SESSION['user_id']) || strtolower($_SESSION['role']) !== "admin") {
+if (!isset($_SESSION['user_id'])) {
     header("Location: ../login.php");
+    exit();
+}
+
+if (strtolower($_SESSION['role']) !== "admin") {
+    header("Location: ../unauthorized.php");
     exit();
 }
 
@@ -22,7 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['month'], $_POST['year
 
     // Calculate exact date range for the selected month/year
     $start_date = date('Y-m-01', strtotime("$year-$month-01"));
-    $end_date = date('Y-m-t', strtotime("$year-$month-01")); // 't' gives last day of month
+    $end_date = date('Y-m-t', strtotime("$year-$month-01"));
 
     // Enable error reporting
     mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
@@ -30,13 +35,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['month'], $_POST['year
     try {
         $con->begin_transaction();
 
-        // 1. Check for existing payroll for this period
-        $check = $con->prepare("SELECT payroll_id FROM payroll 
+        // 1. Check for existing payroll for this period (both driver and helper)
+        $check_driver = $con->prepare("SELECT payroll_id FROM payroll 
                                WHERE pay_period_start = ? AND pay_period_end = ?");
-        $check->bind_param("ss", $start_date, $end_date);
-        $check->execute();
+        $check_driver->bind_param("ss", $start_date, $end_date);
+        $check_driver->execute();
+        $check_driver_result = $check_driver->get_result();
+        $check_driver->close();
 
-        if ($check->get_result()->num_rows > 0) {
+        $check_helper = $con->prepare("SELECT payroll_id FROM helper_payroll 
+                               WHERE pay_period_start = ? AND pay_period_end = ?");
+        $check_helper->bind_param("ss", $start_date, $end_date);
+        $check_helper->execute();
+        $check_helper_result = $check_helper->get_result();
+        $check_helper->close();
+
+        if ($check_driver_result->num_rows > 0 || $check_helper_result->num_rows > 0) {
             throw new Exception("Payroll already exists for " . date('F Y', strtotime($start_date)));
         }
 
@@ -59,12 +73,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['month'], $_POST['year
         $driver_query->execute();
         $drivers = $driver_query->get_result();
 
-        // 3. Base salary configuration
-        $base_salary = 8000.00; // Increased base salary
-        $commission_rate = 0.10; // 10% commission
+        // 3. Get all helpers with their completed deliveries and total revenue
+        $helper_query = $con->prepare("
+            SELECT 
+                h.helper_id, 
+                h.full_name,
+                COUNT(del.delivery_id) as completed_deliveries,
+                COALESCE(SUM(py.total_amount), 0) as delivery_revenue
+            FROM helpers h
+            LEFT JOIN schedules s ON s.helper_id = h.helper_id
+            LEFT JOIN deliveries del ON del.schedule_id = s.schedule_id
+                AND del.delivery_status = 'Completed'
+                AND del.delivery_datetime BETWEEN ? AND ?
+            LEFT JOIN payments py ON py.schedule_id = s.schedule_id
+            GROUP BY h.helper_id
+        ");
+        $helper_query->bind_param("ss", $start_date, $end_date);
+        $helper_query->execute();
+        $helpers = $helper_query->get_result();
 
-        // 4. Prepare payroll insert statement
-        $insert = $con->prepare("
+        // 4. Salary configuration
+        $driver_base_salary = 8000.00;
+        $driver_commission_rate = 0.07; // 15% commission for drivers
+
+        $helper_base_salary = 5000.00;
+        $helper_commission_rate = 0.04; // 10% commission for helpers
+
+        // 5. Prepare payroll insert statements
+        $insert_driver = $con->prepare("
             INSERT INTO payroll (
                 driver_id, pay_period_start, pay_period_end, total_deliveries,
                 base_salary, bonuses, sss_deduction, philhealth_deduction,
@@ -73,41 +109,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['month'], $_POST['year
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), 'Pending', ?, ?)
         ");
 
+        $insert_helper = $con->prepare("
+    INSERT INTO helper_payroll (
+        helper_id, pay_period_start, pay_period_end, total_deliveries,
+        base_salary, bonuses, sss_deduction, philhealth_deduction,
+        pagibig_deduction, deductions, net_pay, payment_status, date_generated
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending', NOW())
+");
         $processed_drivers = 0;
-        // 5. Process each driver's payroll
+        $processed_helpers = 0;
+
+        // 6. Process each driver's payroll
         while ($driver = $drivers->fetch_assoc()) {
             $deliveries = $driver['completed_deliveries'];
             $revenue = $driver['delivery_revenue'];
-            
-            // Calculate commission (10% of delivery revenue)
-            $commission = $revenue * $commission_rate;
-            
+
+            // Calculate commission (15% of delivery revenue)
+            $commission = $revenue * $driver_commission_rate;
+
             // Fixed deductions (Philippine rates)
             $sss = 581.30;        // Fixed SSS contribution
             $philhealth = 450.00; // Fixed PhilHealth
             $pagibig = 100.00;    // Fixed Pag-IBIG
-            
+
             // Maintenance fee (₱500 per delivery)
             $truck_fee = $deliveries * 500;
-            
+
             // Tax calculation (progressive)
-            $taxable_income = $base_salary + $commission;
+            $taxable_income = $driver_base_salary + $commission;
             $tax = calculateTax($taxable_income);
-            
+
             // Total deductions
             $total_deductions = $sss + $philhealth + $pagibig + $truck_fee + $tax;
-            
-            // Calculate net pay
-            $net_pay = ($base_salary + $commission) - $total_deductions;
 
-            // Insert payroll record
-            $insert->bind_param(
+            // Calculate net pay
+            $net_pay = ($driver_base_salary + $commission) - $total_deductions;
+
+            // Insert driver payroll record
+            $insert_driver->bind_param(
                 "issiddddddddddd",
                 $driver['driver_id'],
                 $start_date,
                 $end_date,
                 $deliveries,
-                $base_salary,
+                $driver_base_salary,
                 $commission,
                 $sss,
                 $philhealth,
@@ -117,25 +162,70 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['month'], $_POST['year
                 $total_deductions,
                 $net_pay,
                 $revenue,
-                $commission_rate
+                $driver_commission_rate
             );
-            $insert->execute();
+            $insert_driver->execute();
             $processed_drivers++;
         }
+        $driver_query->close();
+        $insert_driver->close();
+
+        // 7. Process each helper's payroll
+        while ($helper = $helpers->fetch_assoc()) {
+            $deliveries = $helper['completed_deliveries'];
+            $revenue = $helper['delivery_revenue'];
+
+            // Calculate commission (10% of delivery revenue)
+            $commission = $revenue * $helper_commission_rate;
+
+            // Fixed deductions (Philippine rates)
+            $sss = 581.30;        // Fixed SSS contribution
+            $philhealth = 450.00; // Fixed PhilHealth
+            $pagibig = 100.00;    // Fixed Pag-IBIG
+
+            // Total deductions
+            $total_deductions = $sss + $philhealth + $pagibig;
+
+            // Calculate net pay
+            $net_pay = ($helper_base_salary + $commission) - $total_deductions;
+
+            // Insert helper payroll record
+            $insert_helper->bind_param(
+                "issiddddddd", // 11 parameters now (was 10 before)
+                $helper['helper_id'],
+                $start_date,
+                $end_date,
+                $deliveries,
+                $helper_base_salary,
+                $commission,
+                $sss,
+                $philhealth,
+                $pagibig,
+                $total_deductions,
+                $net_pay
+            );
+            $insert_helper->execute();
+            $processed_helpers++;
+        }
+        $helper_query->close();
+        $insert_helper->close();
 
         $con->commit();
         $message = "Successfully generated payroll for " . date('F Y', strtotime($start_date)) .
-            " ($processed_drivers drivers processed)";
+            " ($processed_drivers drivers and $processed_helpers helpers processed)";
         $alert_class = 'alert-success';
     } catch (Exception $e) {
-        $con->rollback();
+        if (isset($con) && $con instanceof mysqli) {
+            $con->rollback();
+        }
         $message = "Error: " . $e->getMessage();
         $alert_class = 'alert-danger';
     }
 }
 
 // Philippine tax calculation function
-function calculateTax($monthly_income) {
+function calculateTax($monthly_income)
+{
     $annual = $monthly_income * 12;
 
     if ($annual <= 250000) return 0;
@@ -157,17 +247,35 @@ function calculateTax($monthly_income) {
 
     <div class="card shadow">
         <div class="card-header py-3">
-            <h5 class="m-0 font-weight-bold text-primary">Select Payroll Period</h5>
+            <h5 class="m-0 font-weight-bold">Select Payroll Period</h5>
         </div>
         <div class="card-body">
             <form method="POST">
-                <!-- Your existing form fields -->
                 <div class="row">
                     <div class="col-md-6">
                         <div class="form-group">
                             <label for="monthSelect">Select Month:</label>
                             <select class="form-control" id="monthSelect" name="month" required>
-                                <!-- Month options -->
+                                <?php
+                                $months = [
+                                    '01' => 'January',
+                                    '02' => 'February',
+                                    '03' => 'March',
+                                    '04' => 'April',
+                                    '05' => 'May',
+                                    '06' => 'June',
+                                    '07' => 'July',
+                                    '08' => 'August',
+                                    '09' => 'September',
+                                    '10' => 'October',
+                                    '11' => 'November',
+                                    '12' => 'December'
+                                ];
+                                foreach ($months as $num => $name) {
+                                    $selected = (date('m') == $num) ? 'selected' : '';
+                                    echo "<option value='$num' $selected>$name</option>";
+                                }
+                                ?>
                             </select>
                         </div>
                     </div>
@@ -175,7 +283,13 @@ function calculateTax($monthly_income) {
                         <div class="form-group">
                             <label for="yearSelect">Select Year:</label>
                             <select class="form-control" id="yearSelect" name="year" required>
-                                <!-- Year options -->
+                                <?php
+                                $current_year = date('Y');
+                                for ($year = $current_year - 2; $year <= $current_year + 2; $year++) {
+                                    $selected = ($year == $current_year) ? 'selected' : '';
+                                    echo "<option value='$year' $selected>$year</option>";
+                                }
+                                ?>
                             </select>
                         </div>
                     </div>
@@ -186,7 +300,10 @@ function calculateTax($monthly_income) {
                         <i class="bi bi-calculator"></i> Generate Payroll
                     </button>
                     <a href="payroll_view.php" class="btn btn-secondary ml-2">
-                        <i class="bi bi-list-ul"></i> View Existing Payrolls
+                        <i class="bi bi-list-ul"></i> View Driver Payrolls
+                    </a>
+                    <a href="helper_payroll_view.php" class="btn btn-secondary ml-2">
+                        <i class="bi bi-list-ul"></i> View Helper Payrolls
                     </a>
                 </div>
             </form>

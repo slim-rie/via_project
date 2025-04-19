@@ -148,13 +148,31 @@
             }
         }
 
-        /* Fixed header table styles */
+        /* Table styles from style 2 */
+        .filter-form {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .form-select {
+            padding: 8px 12px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            background-color: white;
+        }
+
         .fixed-header {
             position: relative;
             width: 100%;
             overflow: auto;
-            height: 100%;
-            /* Set the height as needed */
+            max-height: 75vh;
+            border-radius: 8px;
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+            margin-top: 20px;
+            background: white;
         }
 
         .fixed-header table {
@@ -163,32 +181,188 @@
         }
 
         .fixed-header th {
+            background-color: #364C84;
+            color: white;
+            padding: 12px;
+            text-align: left;
             position: sticky;
             top: 0;
-            background-color: #f8f9fa;
-            /* Same as body background */
             z-index: 10;
         }
 
-        th,
-        td {
-            padding: 10px;
-            border: 1px solid #ccc;
-            text-align: left;
+        .fixed-header td {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
         }
 
-        /* #calendar {
-            max-width: 900px;
-            margin: 20px auto;
-            padding: 10px;
-            background-color: #fff;
-            border-radius: 10px;
-            box-shadow: 0px 0px 10px #ccc;
-        } */
+        .fixed-header tr:hover {
+            background-color: #f5f7ff;
+        }
 
+        /* Status badges from style 2 */
+        .status-badge {
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .status-pending {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+
+        .status-accepted {
+            background-color: #cce5ff;
+            color: #004085;
+        }
+
+        .status-in-transit {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .status-delivered {
+            background-color: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .status-completed {
+            background-color: #e2e3e5;
+            color: #383d41;
+        }
+
+        /* Action buttons from style 2 */
+        .btn-action {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            color: white;
+            cursor: pointer;
+            font-size: 0.85rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .btn-accept {
+            background-color: #17a2b8;
+        }
+
+        .btn-start {
+            background-color: #28a745;
+        }
+
+        .btn-deliver {
+            background-color: #ffc107;
+            color: #212529;
+        }
+
+        .btn-complete {
+            background-color: #6c757d;
+        }
+
+        .no-action {
+            color: #6c757d;
+            font-style: italic;
+        }
+
+        .no-schedules {
+            text-align: center;
+            padding: 20px;
+            color: #6c757d;
+        }
+
+        .action-form {
+            margin: 0;
+        }
+
+        /* Calendar styles from style 1 */
+        #calendar {
+            font-family: 'Bruno Ace', sans-serif;
+            background-color: white;
+            border-radius: 8px;
+        }
+
+        .fc-header-toolbar {
+            padding: 10px;
+            margin-bottom: 10px !important;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .fc-button {
+            background-color: #364C84 !important;
+            border-color: #364C84 !important;
+            color: white !important;
+            padding: 6px 12px;
+            font-size: 14px;
+            border-radius: 4px !important;
+        }
+
+        .fc-button:hover {
+            background-color: #2F3E6E !important;
+            border-color: #2F3E6E !important;
+        }
+
+        .fc-button-active {
+            background-color: #1a2a57 !important;
+            border-color: #1a2a57 !important;
+        }
+
+        .fc-event {
+            border-radius: 4px;
+            border: none;
+            padding: 3px 6px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .fc-event:hover {
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            transform: translateY(-1px);
+        }
+
+        .fc-event-completed {
+            background-color: #28a745;
+            border-color: #28a745;
+        }
+
+        .fc-event-pending {
+            background-color: #ffc107;
+            border-color: #ffc107;
+            color: #212529;
+        }
+
+        .fc-event-in-transit {
+            background-color: #17a2b8;
+            border-color: #17a2b8;
+        }
+
+        .fc-day-today {
+            background-color: rgba(54, 76, 132, 0.1) !important;
+        }
+
+        .fc-col-header-cell {
+            background-color: #364C84;
+            color: white;
+            padding: 8px 0;
+        }
+
+        .fc-daygrid-day {
+            transition: background-color 0.3s;
+        }
+
+        .fc-daygrid-day:hover {
+            background-color: rgba(54, 76, 132, 0.05);
+        }
+
+        /* Additional utility styles from style 1 */
         .card {
             border: none;
             border-radius: 10px;
+            margin-bottom: 20px;
         }
 
         .card-header {
@@ -219,112 +393,27 @@
             border-color: #2F3E6E;
         }
 
-        /* Calendar container */
-        #calendar {
-            font-family: 'Bruno Ace', sans-serif;
-            background-color: white;
-            border-radius: 8px;
-        }
-
-        /* Calendar header */
-        .fc-header-toolbar {
-            padding: 10px;
-            margin-bottom: 10px !important;
-            background-color: #f8f9fa;
-            border-radius: 8px;
-        }
-
-        /* Calendar buttons */
-        .fc-button {
-            background-color: #364C84 !important;
-            border-color: #364C84 !important;
-            color: white !important;
-            padding: 6px 12px;
-            font-size: 14px;
-            border-radius: 4px !important;
-        }
-
-        .fc-button:hover {
-            background-color: #2F3E6E !important;
-            border-color: #2F3E6E !important;
-        }
-
-        .fc-button-active {
-            background-color: #1a2a57 !important;
-            border-color: #1a2a57 !important;
-        }
-
-        /* Calendar event styling */
-        .fc-event {
-            border-radius: 4px;
-            border: none;
-            padding: 3px 6px;
-            font-size: 13px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .fc-event:hover {
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-            transform: translateY(-1px);
-        }
-
-        /* Event colors based on status */
-        .fc-event-completed {
-            background-color: #28a745;
-            border-color: #28a745;
-        }
-
-        .fc-event-pending {
-            background-color: #ffc107;
-            border-color: #ffc107;
-            color: #212529;
-        }
-
-        .fc-event-in-transit {
-            background-color: #17a2b8;
-            border-color: #17a2b8;
-        }
-
-        /* Today's date highlight */
-        .fc-day-today {
-            background-color: rgba(54, 76, 132, 0.1) !important;
-        }
-
-        /* Calendar header cells */
-        .fc-col-header-cell {
-            background-color: #364C84;
-            color: white;
-            padding: 8px 0;
-        }
-
-        /* Calendar day cells */
-        .fc-daygrid-day {
-            transition: background-color 0.3s;
-        }
-
-        .fc-daygrid-day:hover {
-            background-color: rgba(54, 76, 132, 0.05);
-        }
         .chart-container {
-    width: 100%;
-    min-height: 300px;
-}
-#truckChart, #driverChart {
-    min-height: 400px;
-}
-.card {
-    margin-bottom: 20px;
-}
-.table th {
-    white-space: nowrap;
-}
-.text-success {
-    color: #1cc88a !important;
-}
-.text-danger {
-    color: #e74a3b !important;
-}
+            width: 100%;
+            min-height: 300px;
+        }
+
+        #truckChart,
+        #driverChart {
+            min-height: 400px;
+        }
+
+        .table th {
+            white-space: nowrap;
+        }
+
+        .text-success {
+            color: #1cc88a !important;
+        }
+
+        .text-danger {
+            color: #e74a3b !important;
+        }
     </style>
 </head>
 
