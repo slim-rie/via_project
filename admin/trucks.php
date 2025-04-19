@@ -46,9 +46,10 @@ if (isset($_GET['delete'])) {
 
 // Fetch trucks with their assigned drivers
 $trucks = $con->query("
-    SELECT t.truck_id, t.truck_no, t.status, t.driver_id, d.full_name AS driver_name 
+    SELECT t.truck_id, t.truck_no, t.status, t.driver_id, d.full_name AS driver_name , h.full_name AS helper_name
     FROM trucks t
     LEFT JOIN drivers d ON t.driver_id = d.driver_id
+    LEFT JOIN helpers h ON t.helper_id = h.helper_id
 ") or die($con->error);
 
 // Fetch all drivers for dropdown
@@ -92,6 +93,7 @@ $drivers = $con->query("SELECT driver_id, full_name FROM drivers") or die($con->
             <th>Truck Number</th>
             <th>Status</th>
             <th>Driver</th>
+            <th>Helper</th>
             <th>Actions</th>
         </tr>
         <?php while ($row = $trucks->fetch_assoc()): ?>
@@ -100,6 +102,7 @@ $drivers = $con->query("SELECT driver_id, full_name FROM drivers") or die($con->
                 <td><?= htmlspecialchars($row['truck_no']) ?></td>
                 <td><?= htmlspecialchars($row['status']) ?></td>
                 <td><?= !empty($row['driver_name']) ? htmlspecialchars($row['driver_name']) : 'No Driver Assigned' ?></td>
+                <td><?= !empty($row['helper_name']) ? htmlspecialchars($row['helper_name']) : 'No Helper Assigned' ?></td>
                 <td>
                     <!-- Update Truck Form -->
                     <form method="POST" action="" style="display:inline;">

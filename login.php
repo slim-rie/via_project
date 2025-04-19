@@ -32,6 +32,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 case 'customer':
                     $redirect = 'client/home.php';
                     break;
+                case 'helper':
+                    $redirect = 'helper/schedules.php';
+                    break;
                 default:
                     // Optional: handle unexpected role
                     echo "<script>
@@ -68,6 +71,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <title>Login - Joredane Trucking Services</title>
@@ -81,43 +85,45 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
     </style>
 </head>
+
 <body>
 
-<div class="container vh-100 d-flex justify-content-center align-items-center">
-    <div class="row w-100 justify-content-center">
-        <div class="col-md-8 col-lg-6">
-            <form method="POST" action="" class="p-4 shadow rounded-4 bg-light">
-                <h2 class="text-center mb-4" style="text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.5); color: #364C84;">
-                    JOREDANE TRUCKING SERVICES
-                </h2>
-                <h3 class="text-center mb-4">LOG-IN</h3>
+    <div class="container vh-100 d-flex justify-content-center align-items-center">
+        <div class="row w-100 justify-content-center">
+            <div class="col-md-8 col-lg-6">
+                <form method="POST" action="" class="p-4 shadow rounded-4 bg-light">
+                    <h2 class="text-center mb-4" style="text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.5); color: #364C84;">
+                        JOREDANE TRUCKING SERVICES
+                    </h2>
+                    <h3 class="text-center mb-4">LOG-IN</h3>
 
-                <div class="mb-3 row align-items-center">
-                    <label for="username" class="col-sm-4 col-form-label text-end fs-5">Username:</label>
-                    <div class="col-sm-8">
-                        <input type="text" class="form-control rounded-pill input-shadow" id="username" name="username" required>
+                    <div class="mb-3 row align-items-center">
+                        <label for="username" class="col-sm-4 col-form-label text-end fs-5">Username:</label>
+                        <div class="col-sm-8">
+                            <input type="text" class="form-control rounded-pill input-shadow" id="username" name="username" required>
+                        </div>
                     </div>
-                </div>
 
-                <div class="mb-4 row align-items-center">
-                    <label for="password" class="col-sm-4 col-form-label text-end fs-5">Password:</label>
-                    <div class="col-sm-8">
-                        <input type="password" class="form-control rounded-pill input-shadow" id="password" name="password" required>
+                    <div class="mb-4 row align-items-center">
+                        <label for="password" class="col-sm-4 col-form-label text-end fs-5">Password:</label>
+                        <div class="col-sm-8">
+                            <input type="password" class="form-control rounded-pill input-shadow" id="password" name="password" required>
+                        </div>
                     </div>
-                </div>
 
-                <div class="d-flex justify-content-end">
-    <button type="submit" class="btn btn-outline-primary rounded-pill mx-2 input-shadow">Log-in</button>
-</div>
-<p class="text-center mt-3">
-    Don't have an account? <a href="request_account.php">Request here</a>
-</p>
+                    <div class="d-flex justify-content-end">
+                        <button type="submit" class="btn btn-outline-primary rounded-pill mx-2 input-shadow">Log-in</button>
+                    </div>
+                    <p class="text-center mt-3">
+                        Don't have an account? <a href="request_account.php">Request here</a>
+                    </p>
 
-            </form>
+                </form>
+            </div>
         </div>
     </div>
-</div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
+
 </html>

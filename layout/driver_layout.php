@@ -147,50 +147,166 @@
                 display: none;
             }
         }
-        /* Fixed header table styles */
+
+        /* Enhanced Table Styles */
         .fixed-header {
             position: relative;
             width: 100%;
             overflow: auto;
-            height: 100%; /* Set the height as needed */
+            max-height: 75vh;
+            border-radius: 8px;
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+            margin-top: 20px;
+            background: white;
         }
 
         .fixed-header table {
             width: 100%;
-            border-collapse: collapse;
+            border-collapse: separate;
+            border-spacing: 0;
+            font-size: 0.95rem;
         }
 
         .fixed-header th {
             position: sticky;
             top: 0;
-            background-color: #f8f9fa; /* Same as body background */
+            background-color: #364C84;
+            color: white;
+            padding: 12px 15px;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            letter-spacing: 0.5px;
+            border: none;
             z-index: 10;
         }
 
-        th,
-        td {
-            padding: 10px;
-            border: 1px solid #ccc;
-            text-align: left;
+        .fixed-header td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #e0e0e0;
+            vertical-align: middle;
+            color: #444;
         }
-        
-        #calendar {
-            max-width: 1100px;
-            margin: 30px auto;
-            padding: 20px;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+
+        .fixed-header tr:not(:last-child) td {
+            border-bottom: 1px solid #e0e0e0;
         }
-        h1 {
+
+        .fixed-header tr:hover td {
+            background-color: #f5f7ff;
+        }
+
+        /* Status Badges */
+        .status-badge {
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
             text-align: center;
-            margin-top: 20px;
-            color: #333;
+            display: inline-block;
+            min-width: 90px;
         }
-        .fc-event {
+
+        .status-scheduled {
+            background-color: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .status-pending {
+            background-color: #fff8e1;
+            color: #ff8f00;
+        }
+
+        .status-in-transit {
+            background-color: #e8f5e9;
+            color: #388e3c;
+        }
+
+        .status-delivered {
+            background-color: #f1f8e9;
+            color: #689f38;
+        }
+
+        .status-completed {
+            background-color: #e8eaf6;
+            color: #3949ab;
+        }
+
+        /* Action Buttons */
+        .btn-action {
+            border: none;
+            border-radius: 4px;
+            padding: 6px 12px;
+            font-size: 0.85rem;
+            font-weight: 500;
             cursor: pointer;
-            font-size: 0.85em;
-            padding: 2px 5px;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+        }
+
+        .btn-start {
+            background-color: #4caf50;
+            color: white;
+        }
+
+        .btn-start:hover {
+            background-color: #3d8b40;
+        }
+
+        .btn-complete {
+            background-color: #2196f3;
+            color: white;
+        }
+
+        .btn-complete:hover {
+            background-color: #0b7dda;
+        }
+
+        .btn-action i {
+            font-size: 0.9rem;
+        }
+
+        /* No Schedules Message */
+        .no-schedules {
+            text-align: center;
+            padding: 30px;
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        /* Responsive Table */
+        @media (max-width: 992px) {
+            .fixed-header {
+                overflow-x: auto;
+            }
+
+            .fixed-header table {
+                min-width: 900px;
+            }
+        }
+
+        /* Page Header */
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .page-title {
+            color: #364C84;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .current-date {
+            color: #666;
+            font-size: 0.95rem;
         }
     </style>
 </head>

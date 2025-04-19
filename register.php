@@ -48,8 +48,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     $insert_customer->bind_param("iss", $user_id, $full_name, $email);
                     $insert_customer->execute();
                     $insert_customer->close();
-                } elseif ($role === 'driver' || $role === 'porter') {
+                } elseif ($role === 'driver') {
                     $insert_employee = $con->prepare("INSERT INTO drivers (user_id, full_name, email) VALUES (?, ?, ?)");
+                    $insert_employee->bind_param("iss", $user_id, $full_name, $email);
+                    $insert_employee->execute();
+                    $insert_employee->close();
+                } elseif ($role === 'helper') {
+                    $insert_employee = $con->prepare("INSERT INTO helpers (user_id, full_name, email) VALUES (?, ?, ?)");
                     $insert_employee->bind_param("iss", $user_id, $full_name, $email);
                     $insert_employee->execute();
                     $insert_employee->close();
@@ -125,7 +130,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         <option value="" disabled selected>Select a role</option>
                         <option value="Admin" <?= ($role == "Admin") ? 'selected' : '' ?>>Admin</option>
                         <option value="Driver" <?= ($role == "Driver") ? 'selected' : '' ?>>Driver</option>
-                        <option value="Porter" <?= ($role == "Porter") ? 'selected' : '' ?>>Porter</option>
+                        <option value="Helper" <?= ($role == "Helper") ? 'selected' : '' ?>>Helper</option>
                         <option value="Customer" <?= ($role == "Customer") ? 'selected' : '' ?>>Customer</option>
                     </select>
                 </div>

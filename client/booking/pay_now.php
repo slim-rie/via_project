@@ -1,44 +1,37 @@
 <?php
-include "../../dbcon.php";
+session_start();
+include '../../dbcon.php';
 
-$schedule_id = $_POST['schedule_id'];
-
-// Get schedule dates
-$scheduleQuery = $con->prepare("SELECT start_time, end_time FROM schedules WHERE schedule_id = ?");
-$scheduleQuery->bind_param("i", $schedule_id);
-$scheduleQuery->execute();
-$scheduleResult = $scheduleQuery->get_result()->fetch_assoc();
-
-if (!$scheduleResult) {
-    echo "Schedule not found.";
+if (!isset($_SESSION['user_id'])) {
+    header("Location: ../login.php");
     exit();
 }
 
-// Calculate days between start and end
-$start_time = new DateTime($scheduleResult['start_time']);
-$end_time = new DateTime($scheduleResult['end_time']);
-$interval = $start_time->diff($end_time);
-$number_of_days = $interval->days;
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $schedule_id = (int)$_POST['schedule_id'];
+    $amount = (float)$_POST['amount'];
 
-// Avoid 0-day charges
-if ($number_of_days == 0) $number_of_days = 1;
+    $check = $con->prepare("SELECT payment_id, status FROM payments WHERE schedule_id = ? ORDER BY payment_id DESC LIMIT 1");
+    $check->bind_param("i", $schedule_id);
+    $check->execute();
+    $payment = $check->get_result()->fetch_assoc();
 
-$amount_per_day = 5000;
-$total_amount = $number_of_days * $amount_per_day;
+    if (!$payment || $payment['status'] === 'Paid') {
+        header("Location: ../booking.php?error=already_paid_or_missing");
+        exit();
+    }
 
-// Insert into payments
-$stmt = $con->prepare("INSERT INTO payments (total_amount, status, date, schedule_id) VALUES (?, 'Paid', NOW(), ?)");
-$stmt->bind_param("di", $total_amount, $schedule_id);
+    $payment_id = $payment['payment_id'];
 
-if ($stmt->execute()) {
-    // No need to update delivery status again as it's already 'Pending'
-    header("Location: ../booking.php?paid=1");
-    exit();
-} else {
-    echo "Payment error: " . $stmt->error;
+    $update = $con->prepare("UPDATE payments SET status = 'Paid', date = NOW() WHERE payment_id = ?");
+    $update->bind_param("i", $payment_id);
+
+    if ($update->execute()) {
+        header("Location: ../booking.php?success=payment_success");
+    } else {
+        header("Location: ../booking.php?error=payment_failed");
+    }
 }
 
-$stmt->close();
-$scheduleQuery->close();
 $con->close();
 ?>
