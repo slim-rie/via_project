@@ -428,7 +428,7 @@
             <div class="collapse navbar-collapse" id="navbarTop">
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item"><a class="nav-link text-white" href="#"><i class="bi bi-bell"></i> Notifications</a></li>
-                    <li class="nav-item"><a class="nav-link text-white" href="../admin/profile.php"><i class="bi bi-person-circle"></i> Profile</a></li>
+                    <li class="nav-item"><a class="nav-link text-white" href="profile.php"><i class="bi bi-person-circle"></i> Profile</a></li>
                     <li class="nav-item"><a class="nav-link text-white" href="../logout.php"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
                 </ul>
             </div>
@@ -449,45 +449,46 @@
             </li>
             <li class="nav-item">
                 <a href="schedules.php" class="nav-link <?= $activePage === 'schedules' ? 'active' : '' ?>">
-                    <i class="bi bi-calendar-check"></i> <span>Schedules</span>
+                    <i class="bi bi-calendar-event"></i> <span>Schedules</span>
                 </a>
             </li>
             <li class="nav-item">
                 <a href="reports.php" class="nav-link <?= $activePage === 'reports' ? 'active' : '' ?>">
-                    <i class="bi bi-file-earmark-bar-graph"></i> <span>Reports</span>
+                    <i class="bi bi-graph-up-arrow"></i> <span>Reports</span>
                 </a>
             </li>
             <li class="nav-item">
                 <a href="clients.php" class="nav-link <?= $activePage === 'clients' ? 'active' : '' ?>">
-                    <i class="bi bi-people-fill"></i> <span>Clients</span>
+                    <i class="bi bi-person-lines-fill"></i> <span>Clients</span>
                 </a>
             </li>
             <li class="nav-item">
                 <a href="employees.php" class="nav-link <?= $activePage === 'employees' ? 'active' : '' ?>">
-                    <i class="bi bi-person-vcard"></i> <span>Employees</span>
+                    <i class="bi bi-people"></i> <span>Employees</span>
                 </a>
             </li>
             <li class="nav-item">
                 <a href="payroll_view.php" class="nav-link <?= $activePage === 'payroll' ? 'active' : '' ?>">
-                    <i class="bi bi-cash-stack"></i> <span>Payrolls</span>
+                    <i class="bi bi-wallet2"></i> <span>Payrolls</span>
                 </a>
             </li>
             <li class="nav-item">
                 <a href="pending_bookings.php" class="nav-link <?= $activePage === 'pending_bookings' ? 'active' : '' ?>">
-                    <i class="bi bi-clock-history"></i> <span>Booking Request</span>
+                    <i class="bi bi-hourglass-split"></i> <span>Booking Request</span>
                 </a>
             </li>
             <li class="nav-item">
                 <a href="trucks.php" class="nav-link <?= $activePage === 'trucks' ? 'active' : '' ?>">
-                    <i class="bi bi-truck"></i> <span>Trucks</span>
+                    <i class="bi bi-truck-front"></i> <span>Trucks</span>
                 </a>
             </li>
             <li class="nav-item">
                 <a href="admin_request.php" class="nav-link <?= $activePage === 'request' ? 'active' : '' ?>">
-                    <i class="bi bi-truck"></i> <span>Requests</span>
+                    <i class="bi bi-inbox"></i> <span>Requests</span>
                 </a>
             </li>
         </ul>
+
     </div>
 
     <!-- Main Content -->

@@ -432,13 +432,13 @@
         .info-label {
             font-size: 0.9rem;
             color: #6c757d;
-            font-weight: 500;
+            font-weight: 250;
         }
 
         .info-value {
             font-size: 1.1rem;
             color: #364C84;
-            font-weight: 600;
+            font-weight: 300;
             margin-top: 5px;
         }
 

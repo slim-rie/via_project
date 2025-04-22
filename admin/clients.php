@@ -17,7 +17,7 @@ if (!isset($_SESSION['user_id']) || strtolower($_SESSION['role']) !== "admin") {
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="h3 mb-0 text-gray-800">Client Management</h1>
         <div>
-            <a href="clients/client_add.php" class="btn btn-primary">
+            <a href="../register.php" class="btn btn-primary">
                 <i class="bi bi-plus-circle"></i> Add New Client
             </a>
         </div>

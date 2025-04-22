@@ -6,8 +6,8 @@ ob_start();
 include "../dbcon.php";
 
 if (!isset($_SESSION['user_id'])) {
-    echo "<script>alert('You must log in first.'); window.location.href = 'login.php';</script>";
-    exit();
+  echo "<script>alert('You must log in first.'); window.location.href = 'login.php';</script>";
+  exit();
 }
 
 $userId = $_SESSION['user_id'];
@@ -18,8 +18,8 @@ $profileQuery->bind_param("i", $userId);
 $profileQuery->execute();
 $profileResult = $profileQuery->get_result()->fetch_assoc();
 if (!$profileResult) {
-    echo "No profile found.";
-    exit();
+  echo "No profile found.";
+  exit();
 }
 
 // Get customer ID
@@ -38,6 +38,7 @@ $bookingsQuery = $con->prepare("
     FROM schedules s
     JOIN trucks t ON s.truck_id = t.truck_id
     WHERE s.customer_id = ?
+    ORDER BY s.start_time DESC
 ");
 $bookingsQuery->bind_param("i", $customerId);
 $bookingsQuery->execute();
@@ -47,109 +48,181 @@ $trucks = $con->query("SELECT * FROM trucks WHERE status = 'Available'");
 $prefill_date = $_GET['date'] ?? '';
 ?>
 
-<h1>Welcome, <?= htmlspecialchars($profileResult['full_name']) ?>!</h1>
-<h2>Your Profile</h2>
-<ul>
-  <li><strong>Username:</strong> <?= htmlspecialchars($profileResult['username']) ?></li>
-  <li><strong>Contact No:</strong> <?= htmlspecialchars($profileResult['contact_no']) ?></li>
-</ul>
-<hr>
-<button id="openBookingModal">Book a Truck Delivery</button>
+<div class="container-fluid">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0 text-gray-800">Welcome, <?= htmlspecialchars($profileResult['full_name']) ?>!</h1>
+  </div>
 
-<!-- Booking Modal -->
-<div id="bookingModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background-color:rgba(0,0,0,0.6); z-index:999;">
-  <div class="modal-content" style="background:#fff; margin:5% auto; padding:20px; border-radius:8px; width:90%; max-width:600px; box-shadow:0 0 10px rgba(0,0,0,0.3);">
-    <h2>Book a Truck Delivery</h2>
-    <form method="POST" action="booking/process_booking.php">
-      <label>Pick-up Location:</label>
-      <input type="text" name="pick_up" required>
-
-      <label>Destination:</label>
-      <input type="text" name="destination" required>
-
-      <label>Distance (km):</label>
-      <input type="number" name="distance_km" min="1" step="0.1" required>
-
-      <label>Booking Date:</label>
-      <input type="date" name="booking_date" value="<?= $prefill_date ?>" required>
-
-      <label>Truck:</label>
-      <select name="truck_id" required>
-        <?php while ($truck = $trucks->fetch_assoc()): ?>
-          <option value="<?= $truck['truck_id'] ?>"><?= $truck['truck_no'] ?> (<?= $truck['capacity'] ?>)</option>
-        <?php endwhile; ?>
-      </select>
-
-      <input type="hidden" name="start_time" value="06:00">
-      <input type="hidden" name="end_time" value="18:00">
-
-      <div style="margin-top:15px;">
-        <button type="submit">Book Now</button>
-        <button type="button" id="closeBookingModal">Close</button>
+  <div class="card shadow mb-4">
+    <div class="card-header py-3">
+      <h6 class="m-0 font-weight-bold text-primary">Your Profile</h6>
+    </div>
+    <div class="card-body">
+      <div class="row">
+        <div class="col-md-6">
+          <p><strong>Username:</strong> <?= htmlspecialchars($profileResult['username']) ?></p>
+        </div>
+        <div class="col-md-6">
+          <p><strong>Contact No:</strong> <?= htmlspecialchars($profileResult['contact_no']) ?></p>
+        </div>
       </div>
-    </form>
+      <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#bookingModal">
+        <i class="bi bi-truck"></i> Book a Truck Delivery
+      </button>
+    </div>
+  </div>
+
+  <!-- Booking Modal -->
+  <div class="modal fade" id="bookingModal" tabindex="-1" aria-labelledby="bookingModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="bookingModalLabel">Book a Truck Delivery</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <form method="POST" action="booking/process_booking.php">
+          <div class="modal-body">
+            <div class="mb-3">
+              <label class="form-label">Pick-up Location</label>
+              <input type="text" class="form-control" name="pick_up" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Destination</label>
+              <input type="text" class="form-control" name="destination" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Distance (km)</label>
+              <input type="number" class="form-control" name="distance_km" min="1" step="0.1" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Booking Date</label>
+              <input type="date" class="form-control" name="booking_date" value="<?= $prefill_date ?>" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Truck</label>
+              <select class="form-select" name="truck_id" required>
+                <?php while ($truck = $trucks->fetch_assoc()): ?>
+                  <option value="<?= $truck['truck_id'] ?>"><?= $truck['truck_no'] ?> (<?= $truck['capacity'] ?>)</option>
+                <?php endwhile; ?>
+              </select>
+            </div>
+            <input type="hidden" name="start_time" value="06:00">
+            <input type="hidden" name="end_time" value="18:00">
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            <button type="submit" class="btn btn-primary">Book Now</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="card shadow mb-4">
+    <div class="card-header py-3">
+      <h6 class="m-0 font-weight-bold text-primary">Your Bookings</h6>
+    </div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-bordered table-hover" id="bookingsTable" width="100%" cellspacing="0">
+          <thead>
+            <tr>
+              <th>Schedule</th>
+              <th>Pick-Up</th>
+              <th>Destination</th>
+              <th>Distance</th>
+              <th>Truck</th>
+              <th>Delivery Status</th>
+              <th>Payment Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <?php while ($row = $bookingsResult->fetch_assoc()): ?>
+              <tr>
+                <td>
+                  <?= date('M j, Y', strtotime($row['start_time'])) ?><br>
+                  <?= date('h:i A', strtotime($row['start_time'])) ?>–<?= date('h:i A', strtotime($row['end_time'])) ?>
+                </td>
+                <td><?= htmlspecialchars($row['pick_up']) ?></td>
+                <td><?= htmlspecialchars($row['destination']) ?></td>
+                <td><?= htmlspecialchars($row['distance_km']) ?> km</td>
+                <td><?= htmlspecialchars($row['truck_no']) ?></td>
+                <td>
+                  <span class="badge <?php
+                                      $status = $row['delivery_status'] ?? 'Pending';
+                                      echo ($status == 'Delivered') ? 'bg-success' : (($status == 'In Transit') ? 'bg-info' : 'bg-warning text-dark');
+                                      ?>">
+                    <?= htmlspecialchars($status) ?>
+                  </span>
+                </td>
+                <td>
+                  <span class="badge 
+                                        <?= ($row['payment_status'] ?? 'Pending') == 'Paid' ? 'bg-success' : 'bg-warning text-dark' ?>">
+                    <?= htmlspecialchars($row['payment_status'] ?? 'Pending') ?>
+                  </span>
+                </td>
+                <td>
+                  <div class="d-flex gap-2">
+                    <?php if ($row['payment_status'] === 'Paid'): ?>
+                      <span class="text-success">Paid (₱<?= number_format($row['total_amount'], 2) ?>)</span>
+                    <?php else: ?>
+                      <form method="POST" action="booking/pay_now.php" class="mb-0">
+                        <input type="hidden" name="schedule_id" value="<?= $row['schedule_id'] ?>">
+                        <input type="hidden" name="amount" value="<?= $row['total_amount'] ?>">
+                        <button type="submit" class="btn btn-sm btn-success">
+                          <i class="bi bi-credit-card"></i> Pay ₱<?= number_format($row['total_amount'], 2) ?>
+                        </button>
+                      </form>
+                    <?php endif; ?>
+
+                    <?php if (new DateTime($row['start_time']) > new DateTime()): ?>
+                      <form method="POST" action="booking/cancel_booking.php" class="mb-0" onsubmit="return confirm('Are you sure you want to cancel this booking?');">
+                        <input type="hidden" name="schedule_id" value="<?= $row['schedule_id'] ?>">
+                        <button type="submit" class="btn btn-sm btn-danger">
+                          <i class="bi bi-x-circle"></i> Cancel
+                        </button>
+                      </form>
+                    <?php else: ?>
+                      <button class="btn btn-sm btn-secondary" disabled>
+                        <i class="bi bi-x-circle"></i> Cannot Cancel
+                      </button>
+                    <?php endif; ?>
+                  </div>
+                </td>
+              </tr>
+            <?php endwhile; ?>
+          </tbody>
+        </table>
+      </div>
+    </div>
   </div>
 </div>
 
-<hr>
-
-<h2>Your Bookings</h2>
-<table border="1">
-  <thead>
-    <tr>
-      <th>Schedule</th>
-      <th>Pick-Up</th>
-      <th>Destination</th>
-      <th>Distance</th>
-      <th>Truck</th>
-      <th>Delivery Status</th>
-      <th>Payment Status</th>
-      <th>Action</th>
-    </tr>
-  </thead>
-  <tbody>
-    <?php while ($row = $bookingsResult->fetch_assoc()): ?>
-      <tr>
-        <td><?= date('M j, Y', strtotime($row['start_time'])) ?><br><?= date('h:i A', strtotime($row['start_time'])) ?>–<?= date('h:i A', strtotime($row['end_time'])) ?></td>
-        <td><?= htmlspecialchars($row['pick_up']) ?></td>
-        <td><?= htmlspecialchars($row['destination']) ?></td>
-        <td><?= htmlspecialchars($row['distance_km']) ?> km</td>
-        <td><?= htmlspecialchars($row['truck_no']) ?></td>
-        <td><?= htmlspecialchars($row['delivery_status'] ?? 'Pending') ?></td>
-        <td><?= htmlspecialchars($row['payment_status'] ?? 'Pending') ?></td>
-        <td>
-          <?php if ($row['payment_status'] === 'Paid'): ?>
-            Paid (₱<?= number_format($row['total_amount'], 2) ?>)
-          <?php else: ?>
-            <form method="POST" action="booking/pay_now.php">
-              <input type="hidden" name="schedule_id" value="<?= $row['schedule_id'] ?>">
-              <input type="hidden" name="amount" value="<?= $row['total_amount'] ?>">
-              <button type="submit">Pay ₱<?= number_format($row['total_amount'], 2) ?></button>
-            </form>
-          <?php endif; ?>
-
-          <?php if (new DateTime($row['start_time']) > new DateTime()): ?>
-            <form method="POST" action="booking/cancel_booking.php" onsubmit="return confirm('Cancel this booking?');">
-              <input type="hidden" name="schedule_id" value="<?= $row['schedule_id'] ?>">
-              <button type="submit">Cancel</button>
-            </form>
-          <?php else: ?>
-            <button disabled>Cannot Cancel</button>
-          <?php endif; ?>
-        </td>
-      </tr>
-    <?php endwhile; ?>
-  </tbody>
-</table>
-
 <script>
-document.addEventListener("DOMContentLoaded", function() {
-  const modal = document.getElementById('bookingModal');
-  document.getElementById('openBookingModal').onclick = () => modal.style.display = 'block';
-  document.getElementById('closeBookingModal').onclick = () => modal.style.display = 'none';
-  window.onclick = e => { if (e.target === modal) modal.style.display = 'none'; };
-  document.getElementById('booking_date').min = new Date().toISOString().split('T')[0];
-});
+  $(document).ready(function() {
+    // Initialize DataTable
+    $('#bookingsTable').DataTable({
+      "order": [
+        [0, "desc"]
+      ],
+      "responsive": true,
+      "dom": '<"top"f>rt<"bottom"lip><"clear">',
+      "language": {
+        "search": "_INPUT_",
+        "searchPlaceholder": "Search bookings...",
+        "lengthMenu": "Show _MENU_ entries",
+        "info": "Showing _START_ to _END_ of _TOTAL_ bookings",
+        "paginate": {
+          "previous": "<i class='bi bi-chevron-left'></i>",
+          "next": "<i class='bi bi-chevron-right'></i>"
+        }
+      }
+    });
+
+    // Set minimum date for booking
+    document.getElementById('booking_date').min = new Date().toISOString().split('T')[0];
+  });
 </script>
 
 <?php

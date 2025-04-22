@@ -113,12 +113,12 @@ $schedulesResult = $stmt->get_result();
                                     <?php elseif ($status === 'Accepted'): ?>
                                         <input type="hidden" name="new_status" value="In Transit">
                                         <button type="submit" class="btn-action btn-start">
-                                            <i class="bi bi-play-fill"></i> Start
+                                            <i class="bi bi-play-fill"></i> Start Delivery
                                         </button>
                                     <?php elseif ($status === 'In Transit'): ?>
                                         <input type="hidden" name="new_status" value="Delivered">
                                         <button type="submit" class="btn-action btn-deliver">
-                                            <i class="bi bi-truck"></i> Deliver
+                                            <i class="bi bi-truck"></i> Delivered
                                         </button>
                                     <?php elseif ($status === 'Delivered'): ?>
                                         <input type="hidden" name="new_status" value="Completed">
