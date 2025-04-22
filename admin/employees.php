@@ -27,7 +27,7 @@ $result = mysqli_query($con, $query);
 <div class="card shadow p-3">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h5 class="mb-0">Driver List</h5>
-        <a href="employee/add_employee.php" class="btn btn-primary">
+        <a href="../register.php" class="btn btn-primary">
             <i class="bi bi-plus-circle"></i> Add Driver
         </a>
     </div>

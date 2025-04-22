@@ -61,8 +61,8 @@ if (isset($_GET['approve_id'])) {
         $mail->isSMTP();
         $mail->Host = 'smtp.gmail.com';
         $mail->SMTPAuth = true;
-        $mail->Username = 'oalbacite@gmail.com'; // Your Gmail
-        $mail->Password = 'bfcy tkae tgyy ntmt'; // Your App Password
+        $mail->Username = 'vitracerwang@gmail.com'; // Your Gmail
+        $mail->Password = 'wqqh obpx hibf lzai'; // Your App Password
         $mail->SMTPSecure = 'tls';
         $mail->Port = 587;
 
@@ -84,24 +84,45 @@ if (isset($_GET['approve_id'])) {
 }
 ?>
 
-<h2>Customer Account Requests</h2>
-<table border="1">
-    <tr>
-        <th>Name</th>
-        <th>Email</th>
-        <th>Action</th>
-    </tr>
-    <?php
-    $res = $con->query("SELECT * FROM account_requests WHERE status = 'pending'");
-    while ($row = $res->fetch_assoc()) {
-        echo "<tr>
-            <td>{$row['full_name']}</td>
-            <td>{$row['email']}</td>
-            <td><a href='?approve_id={$row['id']}' class='btn btn-sm btn-outline-light'>Approve</a></td>
-        </tr>";
-    }
-    ?>
-</table>
+<h2 class="mb-4">Customer Account Requests</h2>
+
+<div class="card shadow">
+    <div class="card-body p-0">
+        <div class="fixed-header">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th class="text-end">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php
+                    $res = $con->query("SELECT * FROM account_requests WHERE status = 'pending' ");
+                    if ($res->num_rows > 0) {
+                        while ($row = $res->fetch_assoc()) {
+                            echo "<tr>
+                                <td>{$row['full_name']}</td>
+                                <td>{$row['email']}</td>
+                                <td class='text-end'>
+                                    <a href='?approve_id={$row['id']}' class='btn btn-sm btn-accept'>
+                                        <i class='bi bi-check-circle'></i> Approve
+                                    </a>
+                                </td>
+                            </tr>";
+                        }
+                    } else {
+                        echo "<tr>
+                            <td colspan='4' class='text-center py-4'>No pending account requests</td>
+                        </tr>";
+                    }
+                    ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
 
 <?php
 $content = ob_get_clean();

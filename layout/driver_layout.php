@@ -322,7 +322,7 @@
             <div class="collapse navbar-collapse" id="navbarTop">
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item"><a class="nav-link text-white" href="#"><i class="bi bi-bell"></i> Notifications</a></li>
-                    <li class="nav-item"><a class="nav-link text-white" href="../admin/profile.php"><i class="bi bi-person-circle"></i> Profile</a></li>
+                    <li class="nav-item"><a class="nav-link text-white" href="profile.php"><i class="bi bi-person-circle"></i> Profile</a></li>
                     <li class="nav-item"><a class="nav-link text-white" href="../logout.php"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
                 </ul>
             </div>
