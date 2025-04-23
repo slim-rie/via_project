@@ -14,7 +14,7 @@ if (!isset($_SESSION['user_id']) || strtolower($_SESSION['role']) !== "admin") {
 // Fetch driver data with delivery counts
 $driver_query = "SELECT d.*, 
                 COUNT(del.delivery_id) as total_deliveries,
-                SUM(CASE WHEN del.delivery_status = 'Completed' THEN 1 ELSE 0 END) as completed_deliveries
+                SUM(CASE WHEN del.delivery_status = 'Received' THEN 1 ELSE 0 END) as completed_deliveries
                 FROM drivers d
                 LEFT JOIN schedules s ON s.driver_id = d.driver_id
                 LEFT JOIN deliveries del ON del.schedule_id = s.schedule_id
@@ -24,7 +24,7 @@ $driver_result = mysqli_query($con, $driver_query);
 // Fetch helper data with delivery counts
 $helper_query = "SELECT h.*, 
                 COUNT(del.delivery_id) as total_deliveries,
-                SUM(CASE WHEN del.delivery_status = 'Completed' THEN 1 ELSE 0 END) as completed_deliveries
+                SUM(CASE WHEN del.delivery_status = 'Received' THEN 1 ELSE 0 END) as completed_deliveries
                 FROM helpers h
                 LEFT JOIN schedules s ON s.helper_id = h.helper_id
                 LEFT JOIN deliveries del ON del.schedule_id = s.schedule_id
