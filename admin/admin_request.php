@@ -66,7 +66,7 @@ if (isset($_GET['approve_id'])) {
         $mail->SMTPSecure = 'tls';
         $mail->Port = 587;
 
-        $mail->setFrom('oalbacite@gmail.com', 'Jordane Trucking Services');
+        $mail->setFrom('vitracerwang@gmail.com', 'Jordane Trucking Services');
         $mail->addAddress($data['email'], $data['full_name']);
 
         $mail->isHTML(true);

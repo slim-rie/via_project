@@ -45,7 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Refund payment if already paid
         $paymentQuery = $con->prepare("
             SELECT payment_id, status, total_amount 
-            FROM payments 
+            FROM payments  
             WHERE schedule_id = ? 
             ORDER BY payment_id DESC 
             LIMIT 1

@@ -8,6 +8,14 @@
     <link href="https://fonts.googleapis.com/css2?family=Bruno+Ace&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" />
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- DataTables CSS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+
+    <!-- DataTables JS -->
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+
+
     <!-- Add this in the head section of your layout file -->
     <style>
         body {
@@ -216,9 +224,9 @@
             background-color: #0056b3;
         }
 
-        #bookingModal {
+        /* #bookingModal {
             display: none;
-            /* Hidden by default */
+            
             position: fixed;
             z-index: 999;
             top: 0;
@@ -232,7 +240,6 @@
 
         #bookingModal.show {
             display: flex;
-            /* Show and center content when active */
         }
 
         .modal-content {
@@ -242,7 +249,7 @@
             width: 400px;
             max-width: 90%;
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-        }
+        } */
 
         #bookingModal form {
             display: flex;

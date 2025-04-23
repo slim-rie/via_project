@@ -38,10 +38,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $extra_charge = ($distance_km > 30) ? ceil(($distance_km - 30) / 10) * 5000 : 0;
     $total_cost = $base_rate + $extra_charge;
 
-    $truckQuery = $con->prepare("SELECT driver_id FROM trucks WHERE truck_id = ? AND status = 'Available'");
+    $truckQuery = $con->prepare("SELECT driver_id, helper_id FROM trucks WHERE truck_id = ? AND status = 'Available'");
     $truckQuery->bind_param("i", $truck_id);
     $truckQuery->execute();
-    $driver_id = $truckQuery->get_result()->fetch_assoc()['driver_id'] ?? null;
+    $truckResult = $truckQuery->get_result()->fetch_assoc();
+    $driver_id = $truckResult['driver_id'] ?? null;
+    $helper_id = $truckResult['helper_id'] ?? null;
 
     if (!$driver_id) {
         header("Location: ../booking.php?error=no_driver");
@@ -54,7 +56,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $con->begin_transaction();
 
     try {
-        $insertSchedule = $con->prepare("INSERT INTO schedules (customer_id, truck_id, driver_id, helper_id, start_time, end_time, destination, pick_up, distance_km) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+        $insertSchedule = $con->prepare("INSERT INTO schedules (customer_id, truck_id, driver_id, helper_id, start_time, end_time, destination, pick_up, distance_km) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
         $insertSchedule->bind_param("iiiissssd", $customer_id, $truck_id, $driver_id, $helper_id, $start_time, $end_time, $destination, $pick_up, $distance_km);
         $insertSchedule->execute();
         $schedule_id = $con->insert_id;
@@ -76,8 +78,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } catch (Exception $e) {
         $con->rollback();
         error_log("Booking error: " . $e->getMessage());
-        header("Location: ../booking.php?error=booking_failed");
+        header("Location: ../booking.php?error=booking_failed&message=" . urlencode($e->getMessage()));
     }
 }
 $con->close();
-?>
