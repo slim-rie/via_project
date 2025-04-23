@@ -17,7 +17,7 @@ $updateDelivery->bind_param("i", $schedule_id);
 if ($updateDelivery->execute()) {
     // Set the associated truck back to available in trucks table
     $truckQuery = $con->prepare("UPDATE trucks 
-                                 SET status = 'available' 
+                                 SET status = 'Available' 
                                  WHERE truck_id = (
                                      SELECT truck_id FROM schedules WHERE schedule_id = ?
                                  )");

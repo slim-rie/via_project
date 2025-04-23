@@ -312,7 +312,7 @@ while ($row = mysqli_fetch_assoc($result)) {
                         <div class="col-md-4 text-center">
                             <div class="border-left-primary pl-3 py-2">
                                 <div class="text-xs font-weight-bold  text-uppercase mb-1">In Use</div>
-                                <div class="h5 mb-0 font-weight-bold text-gray-800"><?= $stats['truck_status']['In Use'] ?? 0 ?></div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800"><?= $stats['truck_status']['Booked'] ?? 0 ?></div>
                             </div>
                         </div>
                         <div class="col-md-4 text-center">
