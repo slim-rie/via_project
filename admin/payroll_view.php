@@ -66,7 +66,7 @@ if (strtolower($_SESSION['role']) !== "admin") {
                                               FROM deliveries d
                                               JOIN schedules s ON d.schedule_id = s.schedule_id
                                               WHERE s.driver_id = {$row['driver_id']}
-                                              AND d.delivery_status = 'Completed'
+                                              AND d.delivery_status = 'Received'
                                               AND d.delivery_datetime BETWEEN '{$row['pay_period_start']}' AND '{$row['pay_period_end']}'";
                             $deliveries_result = mysqli_query($con, $deliveries_sql);
                             $deliveries_data = mysqli_fetch_assoc($deliveries_result);
@@ -159,7 +159,7 @@ if (strtolower($_SESSION['role']) !== "admin") {
                                               FROM deliveries d
                                               JOIN schedules s ON d.schedule_id = s.schedule_id
                                               WHERE s.helper_id = {$row['helper_id']}
-                                              AND d.delivery_status = 'Completed'
+                                              AND d.delivery_status = 'Received'
                                               AND d.delivery_datetime BETWEEN '{$row['pay_period_start']}' AND '{$row['pay_period_end']}'";
                             $deliveries_result = mysqli_query($con, $deliveries_sql);
                             $deliveries_data = mysqli_fetch_assoc($deliveries_result);
