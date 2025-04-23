@@ -472,11 +472,11 @@
                     <i class="bi bi-wallet2"></i> <span>Payrolls</span>
                 </a>
             </li>
-            <li class="nav-item">
+            <!-- <li class="nav-item">
                 <a href="pending_bookings.php" class="nav-link <?= $activePage === 'pending_bookings' ? 'active' : '' ?>">
                     <i class="bi bi-hourglass-split"></i> <span>Booking Request</span>
                 </a>
-            </li>
+            </li> -->
             <li class="nav-item">
                 <a href="trucks.php" class="nav-link <?= $activePage === 'trucks' ? 'active' : '' ?>">
                     <i class="bi bi-truck-front"></i> <span>Trucks</span>

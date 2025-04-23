@@ -32,6 +32,21 @@ if (!$payroll) {
     exit();
 }
 
+// Fetch distance and delivery count
+$distance_sql = "SELECT COUNT(*) AS delivery_count, COALESCE(SUM(s.distance_km), 0) AS total_distance
+                 FROM deliveries d
+                 JOIN schedules s ON d.schedule_id = s.schedule_id
+                 WHERE s.driver_id = ?
+                 AND d.delivery_status = 'Completed'
+                 AND d.delivery_datetime BETWEEN ? AND ?";
+$distance_stmt = mysqli_prepare($con, $distance_sql);
+mysqli_stmt_bind_param($distance_stmt, "iss", $payroll['driver_id'], $payroll['pay_period_start'], $payroll['pay_period_end']);
+mysqli_stmt_execute($distance_stmt);
+$distance_result = mysqli_stmt_get_result($distance_stmt);
+$distance_data = mysqli_fetch_assoc($distance_result);
+$total_distance = $distance_data['total_distance'];
+$delivery_count = $distance_data['delivery_count'];
+
 ob_start();
 ?>
 
@@ -70,7 +85,7 @@ ob_start();
             <div class="row">
                 <div class="col-md-6">
                     <div class="card mb-4">
-                        <div class="card-header bg-primary text-white">
+                        <div class="card-header text-white">
                             <h6 class="m-0 font-weight-bold">Earnings</h6>
                         </div>
                         <div class="card-body">
@@ -80,12 +95,16 @@ ob_start();
                                     <td class="text-end">₱<?= number_format($payroll['base_salary'], 2) ?></td>
                                 </tr>
                                 <tr>
-                                    <td>Commission (<?= ($payroll['commission_rate']*100) ?>% of ₱<?= number_format($payroll['delivery_revenue'], 2) ?>):</td>
+                                    <td>Distance Earnings (Bonuses):</td>
                                     <td class="text-end">₱<?= number_format($payroll['bonuses'], 2) ?></td>
                                 </tr>
                                 <tr>
+                                    <td>Total Distance:</td>
+                                    <td class="text-end"><?= number_format($total_distance, 2) ?> km</td>
+                                </tr>
+                                <tr>
                                     <td>Total Deliveries:</td>
-                                    <td class="text-end"><?= $payroll['total_deliveries'] ?></td>
+                                    <td class="text-end"><?= $delivery_count ?></td>
                                 </tr>
                                 <tr class="table-active">
                                     <th>Total Earnings:</th>
@@ -98,7 +117,7 @@ ob_start();
 
                 <div class="col-md-6">
                     <div class="card mb-4">
-                        <div class="card-header bg-primary text-white">
+                        <div class="card-header text-white">
                             <h6 class="m-0 font-weight-bold">Deductions Breakdown</h6>
                         </div>
                         <div class="card-body">
@@ -123,7 +142,6 @@ ob_start();
                                     <td>Truck Maintenance (₱500/delivery):</td>
                                     <td class="text-end">₱<?= number_format($payroll['truck_maintenance'], 2) ?></td>
                                 </tr>
-
                                 <tr class="table-active">
                                     <th>Total Deductions:</th>
                                     <th class="text-end">₱<?= number_format($payroll['deductions'], 2) ?></th>
@@ -147,8 +165,8 @@ ob_start();
                                         if ($payroll[$item[0]] > 0) {
                                             $width = ($payroll[$item[0]] / $total) * 100;
                                             echo '<div class="progress-bar ' . $item[2] . '" role="progressbar" style="width: ' . $width . '%" 
-                  data-bs-toggle="tooltip" data-bs-placement="top" 
-                  title="' . $item[1] . ': ₱' . number_format($payroll[$item[0]], 2) . '"></div>';
+                    data-bs-toggle="tooltip" data-bs-placement="top" 
+                    title="' . $item[1] . ': ₱' . number_format($payroll[$item[0]], 2) . '"></div>';
                                         }
                                     }
                                     ?>
@@ -163,7 +181,7 @@ ob_start();
             <div class="alert alert-success">
                 <h4 class="alert-heading text-center">Net Pay: ₱<?= number_format($payroll['net_pay'], 2) ?></h4>
                 <p class="text-center mb-0">
-                    <small>Calculated as: (Base + Commission) - Deductions</small>
+                    <small>Calculated as: (Base + Distance Earnings) - Deductions</small>
                 </p>
             </div>
         </div>
@@ -180,7 +198,6 @@ ob_start();
     </div>
 </div>
 <script>
-    // Initialize tooltips on document ready
     document.addEventListener('DOMContentLoaded', function() {
         var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
         tooltipTriggerList.map(function(tooltipTriggerEl) {
