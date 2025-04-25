@@ -44,7 +44,8 @@ if (strtolower($_SESSION['role']) !== "admin") {
                             <th>Pay Period</th>
                             <th>Base Salary</th>
                             <th>Deliveries</th>
-                            <th>Commission (15%)</th>
+                            <th>Distance Earnings</th>
+                            <th>Distance (km)</th>
                             <th>Deductions</th>
                             <th>Net Pay</th>
                             <th>Status</th>
@@ -60,16 +61,17 @@ if (strtolower($_SESSION['role']) !== "admin") {
                         $result = mysqli_query($con, $sql);
 
                         while($row = mysqli_fetch_assoc($result)):
-                            // Calculate deliveries for this payroll period
-                            $deliveries_sql = "SELECT COUNT(*) AS delivery_count 
+                            // Calculate deliveries and distance for this payroll period
+                            $deliveries_sql = "SELECT COUNT(*) AS delivery_count, COALESCE(SUM(s.distance_km), 0) AS total_distance
                                               FROM deliveries d
                                               JOIN schedules s ON d.schedule_id = s.schedule_id
                                               WHERE s.driver_id = {$row['driver_id']}
-                                              AND d.delivery_status = 'Completed'
+                                              AND d.delivery_status = 'Received'
                                               AND d.delivery_datetime BETWEEN '{$row['pay_period_start']}' AND '{$row['pay_period_end']}'";
                             $deliveries_result = mysqli_query($con, $deliveries_sql);
                             $deliveries_data = mysqli_fetch_assoc($deliveries_result);
                             $delivery_count = $deliveries_data['delivery_count'] ?? 0;
+                            $total_distance = $deliveries_data['total_distance'] ?? 0;
                         ?>
                         <tr>
                             <td><?= htmlspecialchars($row['full_name']) ?></td>
@@ -80,6 +82,7 @@ if (strtolower($_SESSION['role']) !== "admin") {
                             <td class="text-end">₱<?= number_format($row['base_salary'], 2) ?></td>
                             <td class="text-center"><?= $delivery_count ?></td>
                             <td class="text-end">₱<?= number_format($row['bonuses'], 2) ?></td>
+                            <td class="text-end"><?= number_format($total_distance, 2) ?> km</td>
                             <td class="text-end">₱<?= number_format($row['deductions'], 2) ?></td>
                             <td class="text-end font-weight-bold">₱<?= number_format($row['net_pay'], 2) ?></td>
                             <td>
@@ -156,7 +159,7 @@ if (strtolower($_SESSION['role']) !== "admin") {
                                               FROM deliveries d
                                               JOIN schedules s ON d.schedule_id = s.schedule_id
                                               WHERE s.helper_id = {$row['helper_id']}
-                                              AND d.delivery_status = 'Completed'
+                                              AND d.delivery_status = 'Received'
                                               AND d.delivery_datetime BETWEEN '{$row['pay_period_start']}' AND '{$row['pay_period_end']}'";
                             $deliveries_result = mysqli_query($con, $deliveries_sql);
                             $deliveries_data = mysqli_fetch_assoc($deliveries_result);

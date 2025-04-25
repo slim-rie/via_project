@@ -1,12 +1,12 @@
 <?php
-// profile.php for driver
+// profile.php for helper
 require '../dbcon.php';
 
 ob_start();
 session_start();
 
-// Check if logged in and is a driver
-if (!isset($_SESSION['user_id']) || strtolower($_SESSION['role']) !== "driver") {
+// Check if logged in and is a helper
+if (!isset($_SESSION['user_id']) || strtolower($_SESSION['role']) !== "helper") {
     header("Location: ../login.php");
     exit();
 }
@@ -59,23 +59,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_password'])) {
     }
 }
 
-// Get driver data with assigned truck information
-$sql = "SELECT d.*, u.username, t.truck_no, t.truck_type, h.full_name as helper_name
-        FROM drivers d
-        JOIN users u ON d.user_id = u.user_id
-        LEFT JOIN trucks t ON d.driver_id = t.driver_id
-        LEFT JOIN helpers h ON t.helper_id = h.helper_id
-        WHERE d.user_id = ?";
+// Get helper data with assigned truck and driver information
+$sql = "SELECT h.*, u.username, t.truck_no, t.truck_type, d.full_name as driver_name
+        FROM helpers h
+        JOIN users u ON h.user_id = u.user_id
+        LEFT JOIN trucks t ON h.helper_id = t.helper_id
+        LEFT JOIN drivers d ON t.driver_id = d.driver_id
+        WHERE h.user_id = ?";
 $stmt = $con->prepare($sql);
 $stmt->bind_param("i", $user_id);
 $stmt->execute();
 $result = $stmt->get_result();
-$driver = $result->fetch_assoc();
+$helper = $result->fetch_assoc();
 ?>
 
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="h3 mb-0">Driver Profile</h1>
+        <h1 class="h3 mb-0">Helper Profile</h1>
         <button class="btn btn-primary" id="changePasswordBtn" style="background-color: #364C84; border-color: #364C84;">
             <i class="bi bi-key"></i> Change Password
         </button>
@@ -93,46 +93,42 @@ $driver = $result->fetch_assoc();
         <div class="col-md-12">
             <div class="card shadow mb-4 profile-card">
                 <div class="card-header py-3" style="background: linear-gradient(135deg, #364C84, #4A5C9B);">
-                    <h6 class="m-0 font-weight-bold text-white">Driver Information</h6>
+                    <h6 class="m-0 font-weight-bold text-white">Helper Information</h6>
                 </div>
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-6">
                             <div class="profile-info-item">
                                 <div class="info-label">Username</div>
-                                <div class="info-value"><?= htmlspecialchars($driver['username']) ?></div>
+                                <div class="info-value"><?= htmlspecialchars($helper['username']) ?></div>
                             </div>
                             <div class="profile-info-item">
                                 <div class="info-label">Full Name</div>
-                                <div class="info-value"><?= htmlspecialchars($driver['full_name']) ?></div>
+                                <div class="info-value"><?= htmlspecialchars($helper['full_name']) ?></div>
                             </div>
                             <div class="profile-info-item">
                                 <div class="info-label">Email</div>
-                                <div class="info-value"><?= htmlspecialchars($driver['email']) ?></div>
+                                <div class="info-value"><?= htmlspecialchars($helper['email']) ?></div>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="profile-info-item">
                                 <div class="info-label">Contact Number</div>
-                                <div class="info-value"><?= htmlspecialchars($driver['contact_no']) ?></div>
-                            </div>
-                            <div class="profile-info-item">
-                                <div class="info-label">License Number</div>
-                                <div class="info-value"><?= htmlspecialchars($driver['license_number'] ?? 'Not provided') ?></div>
+                                <div class="info-value"><?= htmlspecialchars($helper['contact_no']) ?></div>
                             </div>
                             <div class="profile-info-item">
                                 <div class="info-label">Assigned Truck</div>
                                 <div class="info-value">
-                                    <?php if ($driver['truck_no']): ?>
-                                        <?= htmlspecialchars($driver['truck_no']) ?> (<?= htmlspecialchars($driver['truck_type']) ?>)
+                                    <?php if ($helper['truck_no']): ?>
+                                        <?= htmlspecialchars($helper['truck_no']) ?> (<?= htmlspecialchars($helper['truck_type']) ?>)
                                     <?php else: ?>
                                         Not assigned
                                     <?php endif; ?>
                                 </div>
                             </div>
                             <div class="profile-info-item">
-                                <div class="info-label">Assigned Helper</div>
-                                <div class="info-value"><?= htmlspecialchars($driver['helper_name'] ?? 'Not assigned') ?></div>
+                                <div class="info-label">Assigned Driver</div>
+                                <div class="info-value"><?= htmlspecialchars($helper['driver_name'] ?? 'Not assigned') ?></div>
                             </div>
                         </div>
                     </div>
@@ -197,5 +193,5 @@ $driver = $result->fetch_assoc();
 
 <?php
 $content = ob_get_clean();
-include "../layout/driver_layout.php";
+include "../layout/helper_layout.php";
 ?>

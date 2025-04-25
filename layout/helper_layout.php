@@ -263,6 +263,77 @@
                 max-width: 100%;
             }
         }
+        /* Profile-specific styles (taking precedence where duplicates exist) */
+        .profile-card {
+            border-radius: 15px;
+            overflow: hidden;
+            border: none;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .profile-info-item {
+            padding: 15px;
+            margin-bottom: 15px;
+            background-color: #f8f9fa;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .profile-info-item:hover {
+            background-color: #e9ecef;
+            transform: translateY(-2px);
+        }
+
+        .info-label {
+            font-size: 0.9rem;
+            color: #6c757d;
+            font-weight: 250;
+        }
+
+        .info-value {
+            font-size: 1.1rem;
+            color: #364C84;
+            font-weight: 300;
+            margin-top: 5px;
+        }
+
+        .address-value {
+            white-space: pre-line;
+        }
+
+        .modal-content-profile {
+            border-radius: 15px;
+            overflow: hidden;
+            border: none;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .form-control {
+            border-radius: 8px;
+            padding: 10px 15px;
+            border: 1px solid #ced4da;
+        }
+
+        .form-control:focus {
+            border-color: #364C84;
+            box-shadow: 0 0 0 0.25rem rgba(54, 76, 132, 0.25);
+        }
+
+        .btn-primary {
+            background-color: #364C84;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+        }
+
+        .btn-primary:hover {
+            background-color: #2F3E6E;
+        }
+
+        .btn-secondary {
+            border-radius: 8px;
+            padding: 10px 20px;
+        }
     </style>
 </head>
 

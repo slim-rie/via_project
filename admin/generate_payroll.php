@@ -54,39 +54,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['month'], $_POST['year
             throw new Exception("Payroll already exists for " . date('F Y', strtotime($start_date)));
         }
 
-        // 2. Get all drivers with their completed deliveries and total revenue
+        // 2. Get all drivers with their completed deliveries and truck information
         $driver_query = $con->prepare("
             SELECT 
                 d.driver_id, 
                 d.full_name,
+                t.truck_type,
                 COUNT(del.delivery_id) as completed_deliveries,
-                COALESCE(SUM(py.total_amount), 0) as delivery_revenue
+                COALESCE(SUM(s.distance_km), 0) as total_distance_km
             FROM drivers d
             LEFT JOIN schedules s ON s.driver_id = d.driver_id
+            LEFT JOIN trucks t ON t.truck_id = s.truck_id
             LEFT JOIN deliveries del ON del.schedule_id = s.schedule_id
                 AND del.delivery_status = 'Completed'
                 AND del.delivery_datetime BETWEEN ? AND ?
-            LEFT JOIN payments py ON py.schedule_id = s.schedule_id
             GROUP BY d.driver_id
         ");
         $driver_query->bind_param("ss", $start_date, $end_date);
         $driver_query->execute();
         $drivers = $driver_query->get_result();
 
-        // 3. Get all helpers with their completed deliveries and total revenue
-        $helper_query = $con->prepare("
-            SELECT 
-                h.helper_id, 
-                h.full_name,
-                COUNT(del.delivery_id) as completed_deliveries,
-                COALESCE(SUM(py.total_amount), 0) as delivery_revenue
-            FROM helpers h
-            LEFT JOIN schedules s ON s.helper_id = h.helper_id
-            LEFT JOIN deliveries del ON del.schedule_id = s.schedule_id
-                AND del.delivery_status = 'Completed'
-                AND del.delivery_datetime BETWEEN ? AND ?
-            LEFT JOIN payments py ON py.schedule_id = s.schedule_id
-            GROUP BY h.helper_id
+         // 3. Get all helpers with their completed deliveries and total revenue
+         $helper_query = $con->prepare("
+         SELECT 
+             h.helper_id, 
+             h.full_name,
+             COUNT(del.delivery_id) as completed_deliveries,
+             COALESCE(SUM(py.total_amount), 0) as delivery_revenue
+         FROM helpers h
+         LEFT JOIN schedules s ON s.helper_id = h.helper_id
+         LEFT JOIN deliveries del ON del.schedule_id = s.schedule_id
+             AND del.delivery_status = 'Completed'
+             AND del.delivery_datetime BETWEEN ? AND ?
+         LEFT JOIN payments py ON py.schedule_id = s.schedule_id
+         GROUP BY h.helper_id
         ");
         $helper_query->bind_param("ss", $start_date, $end_date);
         $helper_query->execute();
@@ -94,10 +95,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['month'], $_POST['year
 
         // 4. Salary configuration
         $driver_base_salary = 8000.00;
-        $driver_commission_rate = 0.07; // 15% commission for drivers
-
         $helper_base_salary = 5000.00;
-        $helper_commission_rate = 0.04; // 10% commission for helpers
+        $helper_commission_rate = 0.10;
+        // Rate per km based on wheeler count
+        $wheeler_rates = [
+            6 => 15.00,   // ₱15 per km for 6-wheeler
+            8 => 20.00,   // ₱20 per km for 8-wheeler
+            10 => 25.00,  // ₱25 per km for 10-wheeler
+            12 => 30.00   // ₱30 per km for 12-wheeler
+        ];
 
         // 5. Prepare payroll insert statements
         $insert_driver = $con->prepare("
@@ -105,27 +111,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['month'], $_POST['year
                 driver_id, pay_period_start, pay_period_end, total_deliveries,
                 base_salary, bonuses, sss_deduction, philhealth_deduction,
                 pagibig_deduction, truck_maintenance, tax_deduction, deductions,
-                net_pay, date_generated, payment_status, delivery_revenue, commission_rate
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), 'Pending', ?, ?)
+                net_pay, date_generated, payment_status, delivery_revenue
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), 'Pending', ? )
         ");
 
         $insert_helper = $con->prepare("
-    INSERT INTO helper_payroll (
-        helper_id, pay_period_start, pay_period_end, total_deliveries,
-        base_salary, bonuses, sss_deduction, philhealth_deduction,
-        pagibig_deduction, deductions, net_pay, payment_status, date_generated
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending', NOW())
-");
+            INSERT INTO helper_payroll (
+                helper_id, pay_period_start, pay_period_end, total_deliveries,
+                base_salary, bonuses, sss_deduction, philhealth_deduction,
+                pagibig_deduction, deductions, net_pay, payment_status, date_generated
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending', NOW())
+        ");
+        
         $processed_drivers = 0;
         $processed_helpers = 0;
 
         // 6. Process each driver's payroll
         while ($driver = $drivers->fetch_assoc()) {
             $deliveries = $driver['completed_deliveries'];
-            $revenue = $driver['delivery_revenue'];
-
-            // Calculate commission (15% of delivery revenue)
-            $commission = $revenue * $driver_commission_rate;
+            $distance = $driver['total_distance_km'];
+            
+            // Extract wheeler count from truck_type (e.g., "10 wheelers" -> 10)
+            $wheeler_count = 6; // default if not found
+            if (preg_match('/(\d+)\s*wheelers?/i', $driver['truck_type'], $matches)) {
+                $wheeler_count = (int)$matches[1];
+            }
+            
+            // Get the rate based on wheeler count
+            $rate_per_km = $wheeler_rates[$wheeler_count] ?? $wheeler_rates[6];
+            
+            // Calculate distance earnings
+            $distance_earnings = $distance * $rate_per_km;
 
             // Fixed deductions (Philippine rates)
             $sss = 581.30;        // Fixed SSS contribution
@@ -136,24 +152,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['month'], $_POST['year
             $truck_fee = $deliveries * 500;
 
             // Tax calculation (progressive)
-            $taxable_income = $driver_base_salary + $commission;
+            $taxable_income = $driver_base_salary + $distance_earnings;
             $tax = calculateTax($taxable_income);
 
             // Total deductions
             $total_deductions = $sss + $philhealth + $pagibig + $truck_fee + $tax;
 
             // Calculate net pay
-            $net_pay = ($driver_base_salary + $commission) - $total_deductions;
+            $net_pay = ($driver_base_salary + $distance_earnings) - $total_deductions;
 
             // Insert driver payroll record
             $insert_driver->bind_param(
-                "issiddddddddddd",
+                "issidddddddddd",
                 $driver['driver_id'],
                 $start_date,
                 $end_date,
                 $deliveries,
                 $driver_base_salary,
-                $commission,
+                $distance_earnings, // Stored in bonuses field
                 $sss,
                 $philhealth,
                 $pagibig,
@@ -161,8 +177,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['month'], $_POST['year
                 $tax,
                 $total_deductions,
                 $net_pay,
-                $revenue,
-                $driver_commission_rate
+                $distance_earnings// Stored in delivery_revenue field
             );
             $insert_driver->execute();
             $processed_drivers++;
@@ -183,6 +198,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['month'], $_POST['year
             $philhealth = 450.00; // Fixed PhilHealth
             $pagibig = 100.00;    // Fixed Pag-IBIG
 
+            
+
             // Total deductions
             $total_deductions = $sss + $philhealth + $pagibig;
 
@@ -191,7 +208,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['month'], $_POST['year
 
             // Insert helper payroll record
             $insert_helper->bind_param(
-                "issiddddddd", // 11 parameters now (was 10 before)
+                "issiddddddd",
                 $helper['helper_id'],
                 $start_date,
                 $end_date,
@@ -236,8 +253,6 @@ function calculateTax($monthly_income)
     else return (2202500 + ($annual - 8000000) * 0.35) / 12;
 }
 ?>
-
-<!-- Rest of your HTML remains the same -->
 <div class="container-fluid">
     <h1 class="mb-4">Generate Payroll</h1>
 

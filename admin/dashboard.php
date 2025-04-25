@@ -45,7 +45,7 @@ $stats['total_trucks'] = mysqli_fetch_assoc($result)['total'];
 // Booking statistics - using deliveries table for status
 $result = mysqli_query($con, "SELECT 
     COUNT(*) AS total_bookings,
-    SUM(CASE WHEN d.delivery_status = 'Completed' THEN 1 ELSE 0 END) AS completed_bookings,
+    SUM(CASE WHEN d.delivery_status = 'Received' THEN 1 ELSE 0 END) AS completed_bookings,
     SUM(CASE WHEN d.delivery_status = 'Pending' THEN 1 ELSE 0 END) AS pending_bookings,
     SUM(CASE WHEN d.delivery_status = 'In Transit' THEN 1 ELSE 0 END) AS in_progress_bookings
     FROM schedules s
@@ -312,7 +312,7 @@ while ($row = mysqli_fetch_assoc($result)) {
                         <div class="col-md-4 text-center">
                             <div class="border-left-primary pl-3 py-2">
                                 <div class="text-xs font-weight-bold  text-uppercase mb-1">In Use</div>
-                                <div class="h5 mb-0 font-weight-bold text-gray-800"><?= $stats['truck_status']['In Use'] ?? 0 ?></div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800"><?= $stats['truck_status']['Booked'] ?? 0 ?></div>
                             </div>
                         </div>
                         <div class="col-md-4 text-center">
@@ -355,7 +355,7 @@ while ($row = mysqli_fetch_assoc($result)) {
                                         <td><?= htmlspecialchars($booking['truck_no']) ?></td>
                                         <td>
                                             <span class="badge bg-<?=
-                                                                    $booking['delivery_status'] == 'Completed' ? 'success' : ($booking['delivery_status'] == 'Pending' ? 'warning' : ($booking['delivery_status'] == 'In Transit' ? 'info' : 'primary')) ?>">
+                                                                    $booking['delivery_status'] == 'Completed' ? 'success' : ($booking['delivery_status'] == 'Pending' ? 'warning' : ($booking['delivery_status'] == 'In Transit' ? 'info' : ($booking['delivery_status'] == 'Received' ? 'success' : 'primary' ))) ?>">
                                                 <?= htmlspecialchars($booking['delivery_status']) ?>
                                             </span>
                                         </td>
